@@ -1,0 +1,22 @@
+{
+  "name": "hardhat-project",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@openzeppelin/hardhat-upgrades": "^1.21.0",
+    "chai-bn": "^0.3.1",
+    "hardhat": "^2.9.3",
+    "hardhat-abi-exporter": "^2.10.0"
+  },
+  "dependencies": {
+    "@aave/core-v3": "^1.17.2",
+    "@aave/periphery-v3": "^2.0.0",
+    "@chainlink/contracts": "^0.4.2",
+    "@openzeppelin/contracts": "^4.5.0",
+    "@openzeppelin/contracts-upgradeable": "^4.8.0-rc.1",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "@uniswap/v3-periphery": "^1.4.3",
+    "chai-almost": "^1.0.1",
+    "hardhat-contract-sizer": "^2.6.1"
+  }
+}
