@@ -11,7 +11,7 @@ import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 
 //If nexttrade = true; Firebase buy or sell more
 //ReadyToTrade is checked by Firebase function to see if it can check to buy or sell
-//tradeType = 0 buy 
+//tradeType = 0 buy
 //tradeType = 1 Sell
 //SystemRetrade is called by Firebase every 1 hour by checking isretrade
 
@@ -49,8 +49,17 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
         uint256 _performanceFee,
         uint256 _collectionPeriod,
         address _managerAddr
-    ) initializer external {
-        __xWinStrategyWithFee_init("xWin IRT", "xIRT", _baseToken, _USDTokenAddr, _managerFee, _performanceFee, _collectionPeriod, _managerAddr);
+    ) external initializer {
+        __xWinStrategyWithFee_init(
+            "xWin IRT",
+            "xIRT",
+            _baseToken,
+            _USDTokenAddr,
+            _managerFee,
+            _performanceFee,
+            _collectionPeriod,
+            _managerAddr
+        );
         baseToken = _baseToken;
         targetToken = _targetToken;
         swapEngine = IxWinSwap(_swapEngine);
@@ -60,24 +69,29 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
         tradeCycle = 1200; // 1 hour
         stopLossPerc = 1500;
     }
-    
+
     modifier onlyExecutor() {
         require(executors[msg.sender], "executor: wut?");
         _;
     }
 
     /// @dev update xwin master contract
-    function updatexWinPriceMaster(address _xWinPriceMaster)
-        external
-        onlyOwner
-    {
+    function updatexWinPriceMaster(
+        address _xWinPriceMaster
+    ) external onlyOwner {
         xWinPriceMaster = IxWinPriceMaster(_xWinPriceMaster);
     }
 
-    function checkUpkeep(bytes calldata /*checkData*/) 
-        external view override returns (bool upkeepNeeded, bytes memory performData) {
+    function checkUpkeep(
+        bytes calldata /*checkData*/
+    )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
         upkeepNeeded = getTriggerStopLoss();
-        performData = abi.encode(1); 
+        performData = abi.encode(1);
     }
 
     function performUpkeep(bytes calldata /*performData*/) external override {
@@ -95,15 +109,18 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
     }
 
     function getTriggerStopLoss() public view returns (bool) {
-        if ((targetToken.balanceOf(address(this)) > 0) && ReadyToTrade()){              
-            uint rate = xWinPriceMaster.getPrice(address(targetToken), baseToken);
+        if ((targetToken.balanceOf(address(this)) > 0) && ReadyToTrade()) {
+            uint rate = xWinPriceMaster.getPrice(
+                address(targetToken),
+                baseToken
+            );
             return rate <= stopLossPrice;
         }
         return false;
     }
 
     function _setStopLossBuy(uint _rate) internal {
-        stopLossPrice = _rate - (_rate * stopLossPerc / 10000);
+        stopLossPrice = _rate - ((_rate * stopLossPerc) / 10000);
     }
 
     /**
@@ -111,51 +128,64 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
      * @dev Only possible when contract not paused.
      * @param _amount: number of tokens to deposit (in CAKE)
      */
-    function deposit(uint256 _amount) external override nonReentrant whenNotPaused returns (uint256) {
+    function deposit(
+        uint256 _amount
+    ) external override nonReentrant whenNotPaused returns (uint256) {
         return _deposit(_amount, 0);
     }
 
-    function deposit(uint256 _amount, uint32 _slippage)
-        public
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256)
-    {
+    function deposit(
+        uint256 _amount,
+        uint32 _slippage
+    ) public override nonReentrant whenNotPaused returns (uint256) {
         return _deposit(_amount, _slippage);
     }
 
-    function _deposit(uint256 _amount, uint32 _slippage) internal returns (uint256) {
-    
+    function _deposit(
+        uint256 _amount,
+        uint32 _slippage
+    ) internal returns (uint256) {
         require(_amount > 0, "Nothing to deposit");
 
-        IERC20Upgradeable(baseToken).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20Upgradeable(baseToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
         _calcFundFee();
         // record user balance in usdt
         uint256 currentShares = _getMintQty(_amount);
         _mint(msg.sender, currentShares);
 
-        if (BuyOrSell() == 0 && targetToken.balanceOf(address(this)) == 0 && !isReTrade()) {
+        if (
+            BuyOrSell() == 0 &&
+            targetToken.balanceOf(address(this)) == 0 &&
+            !isReTrade()
+        ) {
             tradeQueue.ReadyToTrade = true;
         }
-        
-        if(!_isContract(msg.sender)){
-            emitEvent.FundEvent("deposit", address(this), msg.sender, getUnitPrice(), _amount, currentShares);
+
+        if (!_isContract(msg.sender)) {
+            emitEvent.FundEvent(
+                "deposit",
+                address(this),
+                msg.sender,
+                getUnitPrice(),
+                _amount,
+                currentShares
+            );
         }
         return currentShares;
-
     }
 
     function systemReTrade() external onlyExecutor nonReentrant {
         TradeQueue memory tr = tradeQueue;
 
-        require(tr.nextTradeBlock <= block.number,
-            "not allow to retrade yet"
-        );
+        require(tr.nextTradeBlock <= block.number, "not allow to retrade yet");
         if (tr.AmountToBuy >= 0 && tr.AmountPerDay == 0) {
             tradeQueue.AmountPerDay = tr.AmountToBuy;
         }
-        
+
         _systemTrade(tr.tradeType);
     }
 
@@ -171,8 +201,10 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
         tradeQueue.tradeType = _tradeType;
         tradeQueue.ReadyToTrade = false;
         if (_tradeType == 0) {
-            tradeQueue.AmountToBuy = IERC20Upgradeable(baseToken).balanceOf(address(this));
-            tradeQueue.AmountPerDay = tradeQueue.AmountToBuy/2;
+            tradeQueue.AmountToBuy = IERC20Upgradeable(baseToken).balanceOf(
+                address(this)
+            );
+            tradeQueue.AmountPerDay = tradeQueue.AmountToBuy / 2;
             tradeQueue.nextTrade = true;
         }
 
@@ -180,22 +212,32 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
     }
 
     function _systemTrade(uint8 _tradeType) internal {
-
         uint unitprice = getUnitPrice();
         // 0 = BUY, 1 = Close BUY
         if (_tradeType == 0) {
-            uint amtToSwap = tradeQueue.AmountPerDay > maxPerSwap ? maxPerSwap: tradeQueue.AmountPerDay;
-            IERC20Upgradeable(baseToken).safeIncreaseAllowance(address(swapEngine), amtToSwap);
-            uint targetOutput = swapEngine.swapTokenToToken(amtToSwap,baseToken,address(targetToken));
-            uint rate = xWinPriceMaster.getPrice(address(targetToken), baseToken);
+            uint amtToSwap = tradeQueue.AmountPerDay > maxPerSwap
+                ? maxPerSwap
+                : tradeQueue.AmountPerDay;
+            IERC20Upgradeable(baseToken).safeIncreaseAllowance(
+                address(swapEngine),
+                amtToSwap
+            );
+            uint targetOutput = swapEngine.swapTokenToToken(
+                amtToSwap,
+                baseToken,
+                address(targetToken)
+            );
+            uint rate = xWinPriceMaster.getPrice(
+                address(targetToken),
+                baseToken
+            );
             _setStopLossBuy(rate);
             tradeQueue.AmountToBuy = tradeQueue.AmountToBuy - amtToSwap;
             tradeQueue.AmountPerDay = tradeQueue.AmountPerDay - amtToSwap;
 
-            if(tradeQueue.AmountPerDay == 0 && tradeQueue.AmountToBuy > 0 ){
+            if (tradeQueue.AmountPerDay == 0 && tradeQueue.AmountToBuy > 0) {
                 tradeQueue.nextTradeBlock = block.number + (tradeCycle * 12);
-            }
-            else{
+            } else {
                 tradeQueue.nextTradeBlock = block.number + tradeCycle;
             }
 
@@ -206,15 +248,22 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
                 tradeQueue.ReadyToTrade = true;
                 tradeQueue.tradeType = 1;
             }
-            emitEvent.FundEvent("systemBuy",address(this), msg.sender, unitprice, amtToSwap, targetOutput);
-
+            emitEvent.FundEvent(
+                "systemBuy",
+                address(this),
+                msg.sender,
+                unitprice,
+                amtToSwap,
+                targetOutput
+            );
         } else if (_tradeType == 1) {
             uint targetbal = targetToken.balanceOf(address(this));
             uint rate = xWinPriceMaster.getPrice(
                 address(targetToken),
                 baseToken
             );
-            uint maxSwapBTC = maxPerSwap * getDecimals(address(targetToken)) / rate;
+            uint maxSwapBTC = (maxPerSwap * getDecimals(address(targetToken))) /
+                rate;
             uint amtToSwap = targetbal > maxSwapBTC ? maxSwapBTC : targetbal;
             targetToken.safeIncreaseAllowance(address(swapEngine), amtToSwap);
             uint stableOutput = swapEngine.swapTokenToToken(
@@ -228,7 +277,7 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
             tradeQueue.nextTradeBlock = targetbal != 0
                 ? block.number + tradeCycle
                 : block.number;
-            if (targetbal == 0){
+            if (targetbal == 0) {
                 tradeQueue.tradeType = 0;
                 tradeQueue.ReadyToTrade = true;
             }
@@ -248,48 +297,66 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
         return getVaultValuesInUSD();
     }
 
-    function _getVaultValues() internal view override returns (uint vaultValue) {
+    function _getVaultValues()
+        internal
+        view
+        override
+        returns (uint vaultValue)
+    {
         uint stableBal = IERC20Upgradeable(baseToken).balanceOf(address(this));
         uint targetBal = targetToken.balanceOf(address(this));
-        uint rate = xWinPriceMaster.getPrice(
-            address(targetToken),
-            baseToken
-        );
-        uint targetInBase = targetBal * rate / getDecimals(address(targetToken));
+        uint rate = xWinPriceMaster.getPrice(address(targetToken), baseToken);
+        uint targetInBase = (targetBal * rate) /
+            getDecimals(address(targetToken));
         return stableBal + targetInBase;
     }
 
-    function getVaultValuesInUSD() public view override returns (uint vaultValue) {
+    function getVaultValuesInUSD()
+        public
+        view
+        override
+        returns (uint vaultValue)
+    {
         return _convertTo18(_getVaultValues(), stablecoinUSDAddr);
     }
 
-    function getStableValues() public view returns (uint vaultValue){  
-        return _convertTo18(IERC20Upgradeable(baseToken).balanceOf(address(this)), baseToken);
+    function getStableValues() public view returns (uint vaultValue) {
+        return
+            _convertTo18(
+                IERC20Upgradeable(baseToken).balanceOf(address(this)),
+                baseToken
+            );
     }
-    function getTargetValues() public view returns (uint vaultValue){        
-        return _convertTo18(targetToken.balanceOf(address(this)), address(targetToken));
+
+    function getTargetValues() public view returns (uint vaultValue) {
+        return
+            _convertTo18(
+                targetToken.balanceOf(address(this)),
+                address(targetToken)
+            );
     }
 
     /**
      * @notice Withdraws from funds from the Cake Vault
      * @param _shares: Number of shares to withdraw
      */
-    function withdraw(uint256 _shares) external override nonReentrant whenNotPaused returns (uint256){
+    function withdraw(
+        uint256 _shares
+    ) external override nonReentrant whenNotPaused returns (uint256) {
         return _withdraw(_shares, 0);
     }
 
-    function withdraw(uint256 _shares, uint32 _slippage)
-        public
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint)
-    {
+    function withdraw(
+        uint256 _shares,
+        uint32 _slippage
+    ) public override nonReentrant whenNotPaused returns (uint) {
         return _withdraw(_shares, _slippage);
     }
 
-    function _withdraw(uint256 _shares, uint32 _slippage) internal returns (uint256){
-
+    function _withdraw(
+        uint256 _shares,
+        uint32 _slippage
+    ) internal returns (uint256) {
         require(_shares > 0, "Nothing to withdraw");
         require(
             _shares <= IERC20Upgradeable(address(this)).balanceOf(msg.sender),
@@ -307,59 +374,84 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
         if (targetBal > 0) {
             uint withdrawTarget = (redeemratio * targetBal) / 1e18;
             if (withdrawTarget > 0) {
-                targetToken.safeIncreaseAllowance(address(swapEngine), withdrawTarget);
-                uint swapOut = swapEngine.swapTokenToToken(withdrawTarget, address(targetToken), baseToken, _slippage);
+                targetToken.safeIncreaseAllowance(
+                    address(swapEngine),
+                    withdrawTarget
+                );
+                uint swapOut = swapEngine.swapTokenToToken(
+                    withdrawTarget,
+                    address(targetToken),
+                    baseToken,
+                    _slippage
+                );
                 withdrawStable = withdrawStable + swapOut;
             }
         }
 
         withdrawStable = performanceWithdraw(_shares, withdrawStable);
         _burn(msg.sender, _shares);
-        if (withdrawStable > 0) IERC20Upgradeable(baseToken).safeTransfer(msg.sender, withdrawStable);
+        if (withdrawStable > 0)
+            IERC20Upgradeable(baseToken).safeTransfer(
+                msg.sender,
+                withdrawStable
+            );
         TradeQueue memory tr = tradeQueue;
         //User Withdraws All In A Buy Phase
-        if (IERC20Upgradeable(baseToken).balanceOf(address(this)) == 0 && tr.tradeType == 0){
+        if (
+            IERC20Upgradeable(baseToken).balanceOf(address(this)) == 0 &&
+            tr.tradeType == 0
+        ) {
             tr.nextTrade = false;
             tr.ReadyToTrade = false;
             tr.AmountPerDay = 0;
             tr.AmountToBuy = 0;
             tr.nextTradeBlock = block.number;
             //Still have some target to do sell
-            if (targetToken.balanceOf(address(this)) > 0){
+            if (targetToken.balanceOf(address(this)) > 0) {
                 tr.ReadyToTrade = true;
                 tr.tradeType = 1;
             }
         }
         //User Withdraws All But Needs to Sell
-        if (targetToken.balanceOf(address(this)) == 0 && tr.tradeType == 1){
+        if (targetToken.balanceOf(address(this)) == 0 && tr.tradeType == 1) {
             tr.nextTrade = false;
             tr.ReadyToTrade = false;
             tr.nextTradeBlock = block.number;
             tr.tradeType = 0;
         }
         tradeQueue = tr;
-        
-        if(!_isContract(msg.sender)){
-            emitEvent.FundEvent("withdraw", address(this), msg.sender, getUnitPrice(), withdrawStable, _shares);
+
+        if (!_isContract(msg.sender)) {
+            emitEvent.FundEvent(
+                "withdraw",
+                address(this),
+                msg.sender,
+                getUnitPrice(),
+                withdrawStable,
+                _shares
+            );
         }
         return withdrawStable;
     }
 
     function emergencyUnWindPosition() external whenPaused onlyOwner {
-        
         uint targetSwap = targetToken.balanceOf(address(this));
-        if(targetSwap > 0) {
+        if (targetSwap > 0) {
             targetToken.safeIncreaseAllowance(address(swapEngine), targetSwap);
-            swapEngine.swapTokenToToken(targetSwap, address(targetToken), baseToken);
+            swapEngine.swapTokenToToken(
+                targetSwap,
+                address(targetToken),
+                baseToken
+            );
         }
-        TradeQueue memory updatedTrade;  
+        TradeQueue memory updatedTrade;
         updatedTrade.nextTrade = false;
         updatedTrade.ReadyToTrade = false;
         updatedTrade.nextTradeBlock = block.number;
         updatedTrade.tradeType = 0;
         updatedTrade.AmountPerDay = 0;
-        updatedTrade.AmountToBuy = 0; 
-        tradeQueue = updatedTrade;   
+        updatedTrade.AmountToBuy = 0;
+        tradeQueue = updatedTrade;
     }
 
     function setProperties(
@@ -386,41 +478,47 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
     /**
      * @notice Calculates the price per share
      */
-    function getUnitPrice() public override view returns (uint256) {
+    function getUnitPrice() public view override returns (uint256) {
         return _getUnitPrice();
     }
 
-    function _getUnitPrice() internal override view returns (uint256) {
+    function _getUnitPrice() internal view override returns (uint256) {
         uint vValue = getVaultValues();
-        return (getFundTotalSupply() == 0 || vValue == 0) ? 1e18 : vValue * 1e18 / getFundTotalSupply();
+        return
+            (getFundTotalSupply() == 0 || vValue == 0)
+                ? 1e18
+                : (vValue * 1e18) / getFundTotalSupply();
     }
 
-    function getUnitPriceInUSD() public override view returns (uint256) {
+    function getUnitPriceInUSD() public view override returns (uint256) {
         uint vValue = getVaultValuesInUSD();
-        return (getFundTotalSupply() == 0 || vValue == 0) ? 1e18 : vValue * 1e18 / getFundTotalSupply();
+        return
+            (getFundTotalSupply() == 0 || vValue == 0)
+                ? 1e18
+                : (vValue * 1e18) / getFundTotalSupply();
     }
-    
-    function GetAmountPerDay() external view returns (uint)
-    {
+
+    function GetAmountPerDay() external view returns (uint) {
         return tradeQueue.AmountPerDay;
     }
-    function GetAmountToBuy() external view returns (uint)
-    {
+
+    function GetAmountToBuy() external view returns (uint) {
         return tradeQueue.AmountToBuy;
     }
-    function BuyOrSell() public view returns (uint)
-    {
+
+    function BuyOrSell() public view returns (uint) {
         return tradeQueue.tradeType;
     }
-    function ReadyToTrade() public view returns (bool)
-    {
+
+    function ReadyToTrade() public view returns (bool) {
         return tradeQueue.ReadyToTrade;
     }
-    function UserShares() external view returns (uint)
-    {
+
+    function UserShares() external view returns (uint) {
         return IERC20Upgradeable(address(this)).balanceOf(msg.sender);
     }
-     function getDecimals(address _token) private view returns (uint) {
+
+    function getDecimals(address _token) private view returns (uint) {
         return (10 ** ERC20Upgradeable(_token).decimals());
     }
 

@@ -23,12 +23,15 @@ contract UniSwapV2TWAPOracle {
     address public owner;
     address public WBNB;
     uint256 public lastUpdate;
-    uint32 public period = 7200; // min seconds between each update
+    uint32 public period = 7200; // min seconds between each updates
     twapData[] public twapRegistry;
-    mapping (address => mapping(address => uint256)) public twapIndex;
+    mapping(address => mapping(address => uint256)) public twapIndex;
     mapping(address => bool) public executors;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     constructor(address _WBNB) public {
         require(_WBNB != address(0), "Input address 0");
@@ -55,17 +58,19 @@ contract UniSwapV2TWAPOracle {
     }
 
     function massUpdate() public onlyExecutor {
-
         for (uint256 i = 1; i < twapRegistry.length; i++) {
             uint256 price0Cummulative;
             uint256 price1Cummulative;
             uint32 blockTimestamp;
             (
-                price0Cummulative, 
-                price1Cummulative, 
+                price0Cummulative,
+                price1Cummulative,
                 blockTimestamp
-            ) = UniswapV2OracleLibrary.currentCumulativePrices(address(twapRegistry[i].pair));
-            uint32 timeElapsed = blockTimestamp - twapRegistry[i].blockTimestampLast;
+            ) = UniswapV2OracleLibrary.currentCumulativePrices(
+                address(twapRegistry[i].pair)
+            );
+            uint32 timeElapsed = blockTimestamp -
+                twapRegistry[i].blockTimestampLast;
 
             // skip TWAP if timeElapsed too low
             if (timeElapsed < period) {
@@ -73,10 +78,18 @@ contract UniSwapV2TWAPOracle {
             }
 
             twapRegistry[i].price0Average = FixedPoint.uq112x112(
-                uint224((price0Cummulative - twapRegistry[i].price0CummulativeLast) / timeElapsed));
+                uint224(
+                    (price0Cummulative -
+                        twapRegistry[i].price0CummulativeLast) / timeElapsed
+                )
+            );
             twapRegistry[i].price1Average = FixedPoint.uq112x112(
-                uint224((price1Cummulative - twapRegistry[i].price1CummulativeLast) / timeElapsed));
-            
+                uint224(
+                    (price1Cummulative -
+                        twapRegistry[i].price1CummulativeLast) / timeElapsed
+                )
+            );
+
             twapRegistry[i].price0CummulativeLast = price0Cummulative;
             twapRegistry[i].price1CummulativeLast = price1Cummulative;
             twapRegistry[i].blockTimestampLast = blockTimestamp;
@@ -84,21 +97,28 @@ contract UniSwapV2TWAPOracle {
         lastUpdate = block.timestamp;
     }
 
-    function consult(address token0, address token1, uint256 amountIn) external view returns(uint256 amountOut) {
-
+    function consult(
+        address token0,
+        address token1,
+        uint256 amountIn
+    ) external view returns (uint256 amountOut) {
         uint256 index = twapIndex[token0][token1];
         if (index == 0) {
             index = twapIndex[token1][token0];
         }
-        if (index != 0) { // simple case direct price read
-            FixedPoint.uq112x112 memory price0 = twapRegistry[index].price0Average;
-            FixedPoint.uq112x112 memory price1 = twapRegistry[index].price1Average;
+        if (index != 0) {
+            // simple case direct price read
+            FixedPoint.uq112x112 memory price0 = twapRegistry[index]
+                .price0Average;
+            FixedPoint.uq112x112 memory price1 = twapRegistry[index]
+                .price1Average;
             if (token0 == twapRegistry[index].token0) {
                 amountOut = price0.mul(amountIn).decode144();
             } else {
                 amountOut = price1.mul(amountIn).decode144();
             }
-        } else { // direct pair not found, will attempt token0 - WBNB - token1 path
+        } else {
+            // direct pair not found, will attempt token0 - WBNB - token1 path
             index = twapIndex[token0][WBNB];
             uint256 index2 = twapIndex[token1][WBNB];
             if (index == 0) {
@@ -113,29 +133,37 @@ contract UniSwapV2TWAPOracle {
                 return 0;
             }
 
-            FixedPoint.uq112x112 memory pair0Price0 = twapRegistry[index].price0Average; 
-            FixedPoint.uq112x112 memory pair0Price1 = twapRegistry[index].price1Average;
-            FixedPoint.uq112x112 memory pair1Price0 = twapRegistry[index2].price0Average;
-            FixedPoint.uq112x112 memory pair1Price1 = twapRegistry[index2].price1Average;
+            FixedPoint.uq112x112 memory pair0Price0 = twapRegistry[index]
+                .price0Average;
+            FixedPoint.uq112x112 memory pair0Price1 = twapRegistry[index]
+                .price1Average;
+            FixedPoint.uq112x112 memory pair1Price0 = twapRegistry[index2]
+                .price0Average;
+            FixedPoint.uq112x112 memory pair1Price1 = twapRegistry[index2]
+                .price1Average;
             if (token0 == twapRegistry[index].token0) {
-                if (token1 == twapRegistry[index2].token0) {  // token0 - WBNB && token1 - WBNB
-                    amountOut = pair1Price1.mul(
-                        pair0Price0.mul(amountIn).decode144()
-                    ).decode144();
-                } else {  // token0 - WBNB && WBNB - token1
-                    amountOut = pair1Price0.mul(
-                        pair0Price0.mul(amountIn).decode144()
-                    ).decode144();
+                if (token1 == twapRegistry[index2].token0) {
+                    // token0 - WBNB && token1 - WBNB
+                    amountOut = pair1Price1
+                        .mul(pair0Price0.mul(amountIn).decode144())
+                        .decode144();
+                } else {
+                    // token0 - WBNB && WBNB - token1
+                    amountOut = pair1Price0
+                        .mul(pair0Price0.mul(amountIn).decode144())
+                        .decode144();
                 }
             } else {
-                if (token1 == twapRegistry[index2].token0) {  // WBNB - token0 && token1 - WBNB
-                    amountOut = pair1Price1.mul(
-                        pair0Price1.mul(amountIn).decode144()
-                    ).decode144();
-                } else {  // WBNB - token0 && WBNB - token1
-                    amountOut = pair1Price0.mul(
-                        pair0Price1.mul(amountIn).decode144()
-                    ).decode144();
+                if (token1 == twapRegistry[index2].token0) {
+                    // WBNB - token0 && token1 - WBNB
+                    amountOut = pair1Price1
+                        .mul(pair0Price1.mul(amountIn).decode144())
+                        .decode144();
+                } else {
+                    // WBNB - token0 && WBNB - token1
+                    amountOut = pair1Price0
+                        .mul(pair0Price1.mul(amountIn).decode144())
+                        .decode144();
                 }
             }
         }
@@ -145,7 +173,7 @@ contract UniSwapV2TWAPOracle {
         period = _period;
     }
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == owner, "Caller not owner");
         _;
     }
@@ -159,7 +187,10 @@ contract UniSwapV2TWAPOracle {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) external virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
         _transferOwnership(newOwner);
     }
 
@@ -177,11 +208,8 @@ contract UniSwapV2TWAPOracle {
         executors[_address] = _allow;
     }
 
-    modifier onlyExecutor {
-        require(
-            executors[msg.sender],
-            "executor: wut?"
-        );
+    modifier onlyExecutor() {
+        require(executors[msg.sender], "executor: wut?");
         _;
     }
 }

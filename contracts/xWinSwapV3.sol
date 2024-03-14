@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 // import "./Interface/ISwapRouter.sol";
 import "./Interface/AllPancakeInterface.sol";
 import "./Interface/IWETH.sol";
@@ -109,10 +109,15 @@ contract xWinSwapV3 is xWinStrategyInteractor {
     ) internal returns (uint) {
         uint amountsOut = 0;
         SwapInfo memory d = swapData[_fromToken][_toToken];
-        require(d.router != address(0), "xWinSwap: token swap pair not initialised");
+        require(
+            d.router != address(0),
+            "xWinSwap: token swap pair not initialised"
+        );
         uint32 slippage = _slippage > 0 ? _slippage : d.slippage;
         uint256 price = priceMaster.getPrice(_fromToken, _toToken);
-        uint256 amountOutQuote = (_amount * price) - (_amount * price * slippage) / 10000;
+        uint256 amountOutQuote = (_amount * price) -
+            (_amount * price * slippage) /
+            10000;
         amountOutQuote =
             amountOutQuote /
             10 ** ERC20Upgradeable(_fromToken).decimals();
@@ -192,7 +197,6 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         TransferHelper.safeApprove(_fromToken, routerV3, _amount);
         return ISwapRouter(routerV3).exactInputSingle(params);
     }
-
 
     function _swapV3Multihop(
         uint256 _amount,
@@ -322,13 +326,24 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         executors[_address] = _allow;
     }
 
-    function depositToStrategy(uint256 _amount, address _strat, uint32 _slippage) internal returns (uint256) {
+    function depositToStrategy(
+        uint256 _amount,
+        address _strat,
+        uint32 _slippage
+    ) internal returns (uint256) {
         require(isxWinStrategy(_strat), "xWinStrategy: not strategy contract");
-        require(isActivexWinStrategy(_strat), "xWinStrategy: it not xwin strategy");
+        require(
+            isActivexWinStrategy(_strat),
+            "xWinStrategy: it not xwin strategy"
+        );
         return xWinStrategy(_strat).deposit(_amount, _slippage);
     }
 
-    function withdrawFromStrategy(uint256 _amount, address _strat, uint32 _slippage) internal returns (uint256) {
+    function withdrawFromStrategy(
+        uint256 _amount,
+        address _strat,
+        uint32 _slippage
+    ) internal returns (uint256) {
         require(isxWinStrategy(_strat), "xWinStrategy: not strategy contract");
         return xWinStrategy(_strat).withdraw(_amount, _slippage);
     }

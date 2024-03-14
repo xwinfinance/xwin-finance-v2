@@ -10,9 +10,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "./Interface/IxWinEmitEvent.sol";
 
-
-abstract contract xWinStrategy is ERC20Upgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
-    
+abstract contract xWinStrategy is
+    ERC20Upgradeable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable
+{
     using SafeERC20Upgradeable for IERC20Upgradeable;
     address public stablecoinUSDAddr;
     address public baseToken; // DEPOSIT/WITHDRAW TOKEN
@@ -24,7 +27,7 @@ abstract contract xWinStrategy is ERC20Upgradeable, OwnableUpgradeable, Reentran
         string memory symbol,
         address _baseToken,
         address _USDTokenAddr
-     ) onlyInitializing internal {
+    ) internal onlyInitializing {
         require(_baseToken != address(0), "_baseToken input 0");
         require(_USDTokenAddr != address(0), "_USDTokenAddr input 0");
         __Ownable_init();
@@ -35,24 +38,51 @@ abstract contract xWinStrategy is ERC20Upgradeable, OwnableUpgradeable, Reentran
         stablecoinUSDAddr = _USDTokenAddr;
     }
 
-    event _Deposit(uint256 datetime, address contractaddress, uint256 rate, uint256 depositAmount, uint256 shares);
-    event _Withdraw(uint256 datetime, address contractaddress, uint256 rate, uint256 avrCost, uint256 withdrawAmount, uint256 shares);
+    event _Deposit(
+        uint256 datetime,
+        address contractaddress,
+        uint256 rate,
+        uint256 depositAmount,
+        uint256 shares
+    );
+    event _Withdraw(
+        uint256 datetime,
+        address contractaddress,
+        uint256 rate,
+        uint256 avrCost,
+        uint256 withdrawAmount,
+        uint256 shares
+    );
 
+    function getVaultValues() external view virtual returns (uint256);
 
-    function getVaultValues() external virtual view returns (uint256);
-    function _getVaultValues() internal virtual view returns (uint256);
-    function getUnitPrice()  external virtual view returns (uint256);
-    function _getUnitPrice() internal virtual view returns (uint256);   
-    function getVaultValuesInUSD() external virtual view returns (uint256);        
-    function getUnitPriceInUSD()  external virtual view returns (uint256);
+    function _getVaultValues() internal view virtual returns (uint256);
+
+    function getUnitPrice() external view virtual returns (uint256);
+
+    function _getUnitPrice() internal view virtual returns (uint256);
+
+    function getVaultValuesInUSD() external view virtual returns (uint256);
+
+    function getUnitPriceInUSD() external view virtual returns (uint256);
+
     function deposit(uint256 amount) external virtual returns (uint256);
+
     function withdraw(uint256 amount) external virtual returns (uint256);
-        function deposit(uint256 amount, uint32 slippage) external virtual returns (uint256);
-    function withdraw(uint256 amount, uint32 slippage) external virtual returns (uint256);
+
+    function deposit(
+        uint256 amount,
+        uint32 slippage
+    ) external virtual returns (uint256);
+
+    function withdraw(
+        uint256 amount,
+        uint32 slippage
+    ) external virtual returns (uint256);
 
     function setEmitEvent(address _addr) external onlyOwner {
         require(_addr != address(0), "_addr input is 0");
-         emitEvent = IxWinEmitEvent(_addr);
+        emitEvent = IxWinEmitEvent(_addr);
     }
 
     function updateUSDAddr(address _newUSDAddr) external onlyOwner {
@@ -67,6 +97,4 @@ abstract contract xWinStrategy is ERC20Upgradeable, OwnableUpgradeable, Reentran
     function setUnPause() external onlyOwner {
         _unpause();
     }
-
-
 }

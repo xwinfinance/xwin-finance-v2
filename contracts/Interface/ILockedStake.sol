@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-
-interface ILockedStake  {
+interface ILockedStake {
     function getFavor(address _user) external view returns (uint256);
 }
