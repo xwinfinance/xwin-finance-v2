@@ -67,8 +67,21 @@ contract xWinSingleAssetAlpaca is xWinStrategyWithFee {
         return (getFundTotalSupply() == 0 || vValue == 0) ? 1e18 : _convertTo18(vValue * 1e18 / getFundTotalSupply(), stablecoinUSDAddr);
     }
 
-    function deposit(uint _amount) external override nonReentrant whenNotPaused returns (uint256) {
-        
+    function deposit(uint256 _amount) external override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(_amount, 0);
+    }
+
+    function deposit(uint256 _amount, uint32 _slippage)
+        public
+        override
+        nonReentrant
+        whenNotPaused
+        returns (uint256)
+    {        
+        return _deposit(_amount, _slippage);
+    }
+
+    function _deposit(uint256 _amount, uint32 _slippage) internal returns (uint256) {
         require(_amount > 0, "Nothing to deposit");
         _calcFundFee();
         IERC20Upgradeable(baseToken).safeTransferFrom(msg.sender, address(this), _amount);
@@ -82,8 +95,22 @@ contract xWinSingleAssetAlpaca is xWinStrategyWithFee {
         return currentShares;
     }
 
-    function withdraw(uint _amount) external override nonReentrant whenNotPaused returns (uint256) {
-        
+    function withdraw(uint256 _amount) external override nonReentrant whenNotPaused returns (uint256){
+        return _withdraw(_amount, 0);
+    }
+
+    function withdraw(uint256 _amount, uint32 _slippage)
+        public
+        override
+        nonReentrant
+        whenNotPaused
+        returns (uint)
+    {
+        return _withdraw(_amount, _slippage);
+    }
+
+    function _withdraw(uint256 _amount, uint32 _slippage) internal returns (uint256){
+
         require(_amount > 0, "Nothing to withdraw");
         require(_amount <= IERC20Upgradeable(address(this)).balanceOf(msg.sender), "Withdraw amount exceeds balance");
         _calcFundFee();
@@ -108,6 +135,7 @@ contract xWinSingleAssetAlpaca is xWinStrategyWithFee {
             emitEvent.FundEvent("withdraw", address(this), msg.sender, getUnitPrice(), totalRefund, _amount);
         }
         return totalRefund;
+
     }
 
     // Get total vault value in target token i.e. BTCB

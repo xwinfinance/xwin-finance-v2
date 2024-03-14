@@ -57,6 +57,7 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
     event Received(address, uint256);
     event FundCreation(address rebalanceOwner, address newFund, uint256 fundId, string name, string symbol);
     
+    mapping(address => bool) public executors;
     function initialize (
         address _xWinAdminWallet,
         address _xWinSwapAddr,
@@ -87,6 +88,7 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         DEFAULT_REBALANCE_PERIOD = 876000;
         DEFAULT_BLOCKSPERDAY = 28800;
         DEFAULT_SMALLRATIO = 100;
+        executors[msg.sender] = true;
     }
     
     function createFundPrivate(
@@ -104,6 +106,31 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         uint256 fundId = fundV2Array.length - 1;
         fundIDs[fundAddr] = fundId;
         IxWinStrategyInteractor(xWinSwapAddr).registerStrategyContract(fundAddr, DEFAULT_BASETOKEN);
+        _initialiseFund(fundId, DEFAULT_MANAGER_FEE, DEFAULT_PERFORMANCE_FEE, false, 100, DEFAULT_PLATFORM);
+        IFundV2(fundAddr).createTargetNames(_toAddresses, _targetWeight);
+        IFundV2(fundAddr).setValidInvestor(msg.sender, true); 
+
+        // update reb manager to user after setting initial target
+        IFundV2(fundAddr).updateManagerProperty(msg.sender, DEFAULT_MANAGER, DEFAULT_MANAGER_FEE); // update back reb manager to the user
+        emit FundCreation(msg.sender, fundAddr, fundId, name, symbol);
+    }
+
+    function createFundPrivateWithBaseToken(
+        string memory name, 
+        string memory symbol,
+        address _baseToken,
+        address[] calldata _toAddresses,  
+        uint256[] calldata _targetWeight
+    ) external {
+        require(supportedBaseTokens[_baseToken], 'Input Base Token Not supported');
+        if(!whitelisted[msg.sender]) {
+            xWinToken.safeTransferFrom(msg.sender, xWinAdminWallet, DEFAULT_CREATION_FEE); 
+        }
+        address fundAddr = createProxy(name, symbol, _baseToken, address(this), address(this), DEFAULT_BASETOKEN);  // add factory as reb manager first
+        fundV2Array.push(fundAddr);
+        uint256 fundId = fundV2Array.length - 1;
+        fundIDs[fundAddr] = fundId;
+        IxWinStrategyInteractor(xWinSwapAddr).registerStrategyContract(fundAddr, _baseToken);
         _initialiseFund(fundId, DEFAULT_MANAGER_FEE, DEFAULT_PERFORMANCE_FEE, false, 100, DEFAULT_PLATFORM);
         IFundV2(fundAddr).createTargetNames(_toAddresses, _targetWeight);
         IFundV2(fundAddr).setValidInvestor(msg.sender, true); 
@@ -137,7 +164,7 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         address managerFeeAddr, 
         address rebalanceAddr,
         address _USDAddr
-    ) public returns (address){
+    ) internal returns (address){
         require(supportedBaseTokens[_baseToken] , "Token address not approved for base currency.");
         string memory initializerFunction = "initialize(string,string,address,address,address,address,address,address)";
         BeaconProxy newProxyInstance = new BeaconProxy(
@@ -280,9 +307,9 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         }
     }
 
-    function MoveNonIndexNameToBase(address _fundAddr, address _tokenaddress) external returns (uint256 balanceToken, uint256 swapOutput) {
+    function MoveNonIndexNameToBase(address _fundAddr, address _tokenaddress, uint32 _slippage) external onlyOwner returns (uint256 balanceToken, uint256 swapOutput) {
         isRegistered(_fundAddr);
-        return IFundV2(_fundAddr).MoveNonIndexNameToBase(_tokenaddress);
+        return IFundV2(_fundAddr).MoveNonIndexNameToBase(_tokenaddress, _slippage);
     }
 
     function setOpenForPublic(address _fundAddr, bool _allow) external onlyOwner {
@@ -298,11 +325,11 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         isRegistered(_fundAddr);
         IFundV2(_fundAddr).updatePlatformProperty(newPlatformWallet, newPlatformFee);
     }
-    function setPerformanceFee(address _fundAddr, uint256 newPerformFee) external onlyOwner {
+    function setPerformanceFee(address _fundAddr, uint256 newPerformFee) external onlyExecutor {
         isRegistered(_fundAddr);
         IFundV2(_fundAddr).setPerformanceFee(newPerformFee);
     }
-    function updateManagerProperty(address _fundAddr, address newRebManager, address newManager, uint256 newFeebps) external onlyOwner {
+    function updateManagerProperty(address _fundAddr, address newRebManager, address newManager, uint256 newFeebps) external onlyExecutor {
         isRegistered(_fundAddr);
         IFundV2(_fundAddr).updateManagerProperty(newRebManager, newManager, newFeebps);
     }
@@ -355,7 +382,7 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         DEFAULT_CREATION_FEE = _newCreationFee;
     }
 
-    function isRegistered(address _fundAddress) private view {
+    function isRegistered(address _fundAddress) internal view {
         uint256 i = fundIDs[_fundAddress];
         require(fundV2Array[i] == _fundAddress, "xWinAdmin: address not in array");
     }
@@ -405,4 +432,14 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
+
+    function setExecutor(address _address, bool _allow) external onlyOwner {
+        executors[_address] = _allow;
+    }
+
+    modifier onlyExecutor {
+        require(executors[msg.sender], "executor: wut?");
+        _;
+    }
+
 }

@@ -111,13 +111,22 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
      * @dev Only possible when contract not paused.
      * @param _amount: number of tokens to deposit (in CAKE)
      */
-    function deposit(uint256 _amount)
-        external
+    function deposit(uint256 _amount) external override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(_amount, 0);
+    }
+
+    function deposit(uint256 _amount, uint32 _slippage)
+        public
         override
         nonReentrant
         whenNotPaused
         returns (uint256)
     {
+        return _deposit(_amount, _slippage);
+    }
+
+    function _deposit(uint256 _amount, uint32 _slippage) internal returns (uint256) {
+    
         require(_amount > 0, "Nothing to deposit");
 
         IERC20Upgradeable(baseToken).safeTransferFrom(msg.sender, address(this), _amount);
@@ -134,6 +143,7 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
             emitEvent.FundEvent("deposit", address(this), msg.sender, getUnitPrice(), _amount, currentShares);
         }
         return currentShares;
+
     }
 
     function systemReTrade() external onlyExecutor nonReentrant {
@@ -264,13 +274,22 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
      * @notice Withdraws from funds from the Cake Vault
      * @param _shares: Number of shares to withdraw
      */
-    function withdraw(uint256 _shares)
-        external
+    function withdraw(uint256 _shares) external override nonReentrant whenNotPaused returns (uint256){
+        return _withdraw(_shares, 0);
+    }
+
+    function withdraw(uint256 _shares, uint32 _slippage)
+        public
         override
         nonReentrant
         whenNotPaused
         returns (uint)
     {
+        return _withdraw(_shares, _slippage);
+    }
+
+    function _withdraw(uint256 _shares, uint32 _slippage) internal returns (uint256){
+
         require(_shares > 0, "Nothing to withdraw");
         require(
             _shares <= IERC20Upgradeable(address(this)).balanceOf(msg.sender),
@@ -289,7 +308,7 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
             uint withdrawTarget = (redeemratio * targetBal) / 1e18;
             if (withdrawTarget > 0) {
                 targetToken.safeIncreaseAllowance(address(swapEngine), withdrawTarget);
-                uint swapOut = swapEngine.swapTokenToToken(withdrawTarget, address(targetToken), baseToken);
+                uint swapOut = swapEngine.swapTokenToToken(withdrawTarget, address(targetToken), baseToken, _slippage);
                 withdrawStable = withdrawStable + swapOut;
             }
         }

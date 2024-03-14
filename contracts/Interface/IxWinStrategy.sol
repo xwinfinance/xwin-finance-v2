@@ -8,4 +8,6 @@ interface IxWinStrategy {
     function getUnitPriceInUSD() external view returns (uint256);
     function deposit(uint256 amount) external returns (uint256);
     function withdraw(uint256 amount) external returns (uint256);
+    function deposit(uint256 amount, uint32 slippage) external returns (uint256);
+    function withdraw(uint256 amount, uint32 slippage) external returns (uint256);
 }

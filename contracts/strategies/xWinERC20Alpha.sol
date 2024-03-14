@@ -8,7 +8,7 @@ import "../Interface/IxWinSwap.sol";
 import "../Interface/IxWinSingleAssetInterface.sol";
 import "../Interface/IxWinPriceMaster.sol";
 import "../xWinStrategyWithFee.sol";
-
+// import "hardhat/console.sol";
 
 contract xWinERC20Alpha is xWinStrategyWithFee {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -68,34 +68,58 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
      * @dev Only possible when contract not paused.
      * @param _amount: number of tokens to deposit (in CAKE)
      */
-    function deposit(uint256 _amount)
-        external
+    function deposit(uint256 _amount) external override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(_amount, 0);
+    }
+
+    function deposit(uint256 _amount, uint32 _slippage)
+        public
         override
-        nonReentrant whenNotPaused returns (uint256) {
+        nonReentrant
+        whenNotPaused
+        returns (uint256)
+    {
+        return _deposit(_amount, _slippage);
+    }
+
+    function _deposit(uint256 _amount, uint32 _slippage) internal returns (uint256) {
+        
         require(_amount > 0, "Nothing to deposit");
         _calcFundFee();
+        uint256 up = _getUnitPrice();
         IERC20Upgradeable(baseToken).safeTransferFrom(msg.sender, address(this), _amount);
         
         // record user balance in usdt
-        uint256 currentShares = _getMintQty(_amount);
+        uint currentShares = _calcMintQty(up);    
         _mint(msg.sender, currentShares);
         
         totalDeposit = totalDeposit + _amount;
 
         // remaining into stablecoin
         IERC20Upgradeable(baseToken).safeIncreaseAllowance(address(_baseTokenStaking), _amount);
-        IxWinSingleAssetInterface(address(_baseTokenStaking)).deposit(_amount);
+        IxWinSingleAssetInterface(address(_baseTokenStaking)).deposit(_amount, _slippage);
         
         if(!_isContract(msg.sender)){
-            emitEvent.FundEvent("deposit", address(this), msg.sender, getUnitPrice(), _amount, currentShares);
+            emitEvent.FundEvent("deposit", address(this), msg.sender, _convertTo18(up, baseToken), _amount, currentShares);
         }
         return currentShares;
     }
+    
 
     function canSystemDeposit() external view returns (bool){
         
         uint amtToSwap = getAmountToSwap(); 
         return ((block.number - lastInvestedBlock) > reinvestDuration) && (amtToSwap > 0);
+    }
+
+    function _calcMintQty(uint256 _unitPrice) internal view returns (uint256 mintQty)  {
+        
+        uint256 vaultValue = _getVaultValues();
+        uint256 totalSupply = getFundTotalSupply();
+        if(totalSupply == 0) return _convertTo18(vaultValue, baseToken); 
+        uint256 newTotalSupply = vaultValue * 1e18 / _unitPrice;
+        mintQty = newTotalSupply - totalSupply;
+        return mintQty;
     }
 
     /**
@@ -107,7 +131,7 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
         onlyExecutor
         nonReentrant 
     {
-        require((block.number - lastInvestedBlock) > reinvestDuration, " wait till next reinvest cycle");
+        require((block.number - lastInvestedBlock) > reinvestDuration, "wait till next reinvest cycle");
         
         uint amtToSwap = getAmountToSwap(); 
         if(amtToSwap > 0){
@@ -130,7 +154,7 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
     }
 
     function getVaultValues() public override view returns (uint vaultValue) {
-        return _convertTo18( _getVaultValues(), baseToken);
+        return _convertTo18(_getVaultValues(), baseToken);
     }
 
     function _getVaultValues() internal override view returns (uint vaultValue) {                
@@ -163,11 +187,13 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
     }
 
     function getStableValues() external view returns (uint vaultValue){        
-        return xWinPriceMaster.getPrice(address(_baseTokenStaking), stablecoinUSDAddr) * _baseTokenStaking.balanceOf(address(this)) / 1e18; 
+        return
+            (IxWinSingleAssetInterface(address(_baseTokenStaking)).getUnitPriceInUSD() *
+                IxWinSingleAssetInterface(address(_baseTokenStaking)).getUserBalance(address(this))) / 1e18;
     }
 
-    function getTargetValues() external view returns (uint vaultValue){        
-        return xWinPriceMaster.getPrice(address(targetToken), stablecoinUSDAddr) * targetToken.balanceOf(address(this)) / 1e18; 
+    function getTargetValues() external view returns (uint vaultValue){  
+        return xWinPriceMaster.getPrice(address(targetToken), stablecoinUSDAddr) * targetToken.balanceOf(address(this)) / getDecimals(address(targetToken)); 
     }
 
     function getBaseValues() external view returns (uint vaultValue){        
@@ -178,12 +204,22 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
      * @notice Withdraws from funds from the Cake Vault
      * @param _shares: Number of shares to withdraw
      */
-    function withdraw(uint256 _shares)
-        external
+    function withdraw(uint256 _shares) external override nonReentrant whenNotPaused returns (uint256){
+        return _withdraw(_shares, 0);
+    }
+
+    function withdraw(uint256 _shares, uint32 _slippage)
+        public
         override
-        nonReentrant whenNotPaused returns (uint)
+        nonReentrant
+        whenNotPaused
+        returns (uint)
     {
-        
+        return _withdraw(_shares, _slippage);
+    }
+
+    function _withdraw(uint256 _shares, uint32 _slippage) internal returns (uint256){
+
         require(_shares > 0, "Nothing to withdraw");
         require(_shares <= IERC20Upgradeable(address(this)).balanceOf(msg.sender), "Withdraw exceeds balance");
         _calcFundFee();
@@ -199,16 +235,16 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
             withdrawShares = redeemratio * totalTargetTokenShares / 1e18;
             withdrawShares = totalTargetTokenShares < withdrawShares ? totalTargetTokenShares: withdrawShares;
             targetToken.safeIncreaseAllowance(address(swapEngine), withdrawShares);
-            uint targetOut = swapEngine.swapTokenToToken(withdrawShares, address(targetToken), baseToken);
+            uint targetOut = swapEngine.swapTokenToToken(withdrawShares, address(targetToken), baseToken, _slippage);
             totalRefund += targetOut;
         }
         if(totalBaseShares > 0){
             withdrawShares = redeemratio * totalBaseShares / 1e18;
             withdrawShares = totalBaseShares < withdrawShares ? totalBaseShares: withdrawShares;
-            uint stableOut = IxWinSingleAssetInterface(address(_baseTokenStaking)).withdraw(withdrawShares);
+            uint stableOut = IxWinSingleAssetInterface(address(_baseTokenStaking)).withdraw(withdrawShares, _slippage);
             totalRefund += stableOut;
         }
-        
+
         totalRefund = performanceWithdraw(_shares, totalRefund);
         _burn(msg.sender, _shares);
         
@@ -259,12 +295,12 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
      * @notice Calculates the price per share
      */
     function getUnitPrice() public override view returns (uint256) {
-        return _getUnitPrice();
+        return _convertTo18(_getUnitPrice(), baseToken); 
     }
 
     function _getUnitPrice() internal override view returns (uint256) {
-        uint vValue = getVaultValues();
-        return (getFundTotalSupply() == 0 || vValue == 0) ? 1e18 : vValue * 1e18 / getFundTotalSupply();
+        uint vValue = _getVaultValues();
+        return (getFundTotalSupply() == 0 || vValue == 0) ? getDecimals(baseToken) : (vValue * 1e18) / getFundTotalSupply();
     }
 
     function getUnitPriceInUSD() public override view returns (uint256) {

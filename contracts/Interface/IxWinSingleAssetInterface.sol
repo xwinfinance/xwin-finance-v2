@@ -5,6 +5,8 @@ interface IxWinSingleAssetInterface {
 
     function deposit(uint _amount) external returns (uint256);
     function withdraw(uint _amount) external returns (uint256);
+    function deposit(uint256 amount, uint32 slippage) external returns (uint256);
+    function withdraw(uint256 amount, uint32 slippage) external returns (uint256);
     function getUnitPrice()  external view returns (uint256);
     function getUnitPriceInUSD()  external view returns (uint256);
     function getUserBalance(address _user)  external view returns (uint256);

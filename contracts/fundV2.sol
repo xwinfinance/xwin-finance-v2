@@ -66,7 +66,7 @@ contract FundV2 is xWinStrategy {
         require(_manageraddr != address(0), "_manageraddr Input 0");
         require(_managerRebaddr != address(0), "_managerRebaddr Input 0");
         require(_platformWallet != address(0), "_platformWallet Input 0");
-        require(_lockedStaking != address(0), "_lockedStaking Input 0");
+        // require(_lockedStaking != address(0), "_lockedStaking Input 0");
         
         __xWinStrategy_init(_name, _symbol, _baseToken, _USDAddr);
         managerAddr = _manageraddr;
@@ -189,7 +189,16 @@ contract FundV2 is xWinStrategy {
     }
     
     /// @dev perform subscription based on ratio setup
-    function deposit(uint256 amount, uint32 _slippage) public whenNotPaused returns (uint256) {
+    function deposit(uint256 amount, uint32 _slippage) public override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(amount, _slippage);
+    }
+
+    function deposit(uint256 amount) external override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(amount, 0);
+    }
+
+    function _deposit(uint256 amount, uint32 _slippage) internal returns (uint256) {
+
         require(targetAddr.length > 0, "xWinFundV2: This fund is empty");
         
         if(!openForPublic){
@@ -225,18 +234,21 @@ contract FundV2 is xWinStrategy {
         _mint(msg.sender, mintQty);
         setPerformDeposit(mintQty, unitPrice);
 
-
         emitEvent.FundEvent("deposit", address(this), msg.sender, _convertTo18(unitPrice, baseToken), amount, mintQty);
         return mintQty;
     }
-
-    function deposit(uint256 amount) external override whenNotPaused returns (uint256) {
-        return deposit(amount, 0);
-    }
     
     /// @dev perform redemption based on unit redeem
-    function withdraw(uint256 amount, uint32 _slippage) public whenNotPaused returns (uint256){
-        
+    function withdraw(uint256 amount, uint32 _slippage) public override nonReentrant whenNotPaused returns (uint256){
+        return _withdraw(amount, _slippage);
+    }
+
+    function withdraw(uint256 amount) external override nonReentrant whenNotPaused returns (uint256){
+        return _withdraw(amount, 0);
+    }
+
+    function _withdraw(uint256 amount, uint32 _slippage) internal returns (uint256){
+
         require(IERC20Upgradeable(address(this)).balanceOf(msg.sender) >= amount, "no balance to withdraw");
 
         _calcFundFee();
@@ -265,10 +277,6 @@ contract FundV2 is xWinStrategy {
         emitEvent.FundEvent("withdraw", address(this), msg.sender, _convertTo18(unitP, baseToken), finalOutput, amount);
 
         return finalOutput;
-    }
-
-    function withdraw(uint256 amount) external override whenNotPaused returns (uint256){
-        return withdraw(amount, 0);
     }
 
     
@@ -452,7 +460,7 @@ contract FundV2 is xWinStrategy {
     }
 
     function _getUnitPrice(uint256 fundvalue) internal view returns(uint256){
-        return getFundTotalSupply() == 0 ? UPMultiplier * 1e18 : _convertTo18(fundvalue *  1e18 / getFundTotalSupply(), baseToken);
+        return getFundTotalSupply() == 0 ? UPMultiplier * getDecimals(baseToken) : _convertTo18(fundvalue *  1e18 / getFundTotalSupply(), baseToken);
     }
 
     /// @dev return unit price in USd
@@ -524,7 +532,7 @@ contract FundV2 is xWinStrategy {
     }
 
     function _getUnitPrice() internal override view returns(uint256){
-        return getFundTotalSupply() == 0 ? UPMultiplier * 1e18 : _getVaultValues() *  1e18 / getFundTotalSupply();
+        return getFundTotalSupply() == 0 ? UPMultiplier * getDecimals(baseToken) : _getVaultValues() *  1e18 / getFundTotalSupply();
     }
 
     function _getUPInUSD() internal view returns(uint256){

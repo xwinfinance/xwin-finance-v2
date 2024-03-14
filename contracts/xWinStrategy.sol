@@ -47,6 +47,8 @@ abstract contract xWinStrategy is ERC20Upgradeable, OwnableUpgradeable, Reentran
     function getUnitPriceInUSD()  external virtual view returns (uint256);
     function deposit(uint256 amount) external virtual returns (uint256);
     function withdraw(uint256 amount) external virtual returns (uint256);
+        function deposit(uint256 amount, uint32 slippage) external virtual returns (uint256);
+    function withdraw(uint256 amount, uint32 slippage) external virtual returns (uint256);
 
     function setEmitEvent(address _addr) external onlyOwner {
         require(_addr != address(0), "_addr input is 0");

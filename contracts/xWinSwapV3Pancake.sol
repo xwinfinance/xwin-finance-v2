@@ -5,15 +5,15 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
-// import "./Interface/ISwapRouter.sol";
+// import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+import "./Interface/ISwapRouter.sol";
 import "./Interface/AllPancakeInterface.sol";
 import "./Interface/IWETH.sol";
 import "./Interface/IxWinSwap.sol";
 import "./xWinStrategyInteractor.sol";
 import "./Interface/IxWinPriceMaster.sol";
 
-contract xWinSwapV3 is xWinStrategyInteractor {
+contract xWinSwapV3Pancake is xWinStrategyInteractor {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     enum SwapMethod {
@@ -113,10 +113,7 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         uint32 slippage = _slippage > 0 ? _slippage : d.slippage;
         uint256 price = priceMaster.getPrice(_fromToken, _toToken);
         uint256 amountOutQuote = (_amount * price) - (_amount * price * slippage) / 10000;
-        amountOutQuote =
-            amountOutQuote /
-            10 ** ERC20Upgradeable(_fromToken).decimals();
-
+        amountOutQuote = amountOutQuote / 10 ** ERC20Upgradeable(_fromToken).decimals();
         if (d.swapMethod == SwapMethod.UNISWAPV2) {
             amountsOut = _swapV2(
                 _fromToken,
@@ -184,7 +181,6 @@ contract xWinSwapV3 is xWinStrategyInteractor {
                 tokenOut: _toToken,
                 fee: poolFee,
                 recipient: _recipient,
-                deadline: block.timestamp,
                 amountIn: _amount,
                 amountOutMinimum: amountOutQuote,
                 sqrtPriceLimitX96: 0
@@ -206,7 +202,6 @@ contract xWinSwapV3 is xWinStrategyInteractor {
             .ExactInputParams({
                 path: multihopPath,
                 recipient: _recipient,
-                deadline: block.timestamp,
                 amountIn: _amount,
                 amountOutMinimum: amountOutQuote
             });

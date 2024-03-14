@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "./xWinStrategy.sol";
 import "./Interface/ILockedStake.sol";
+// import "hardhat/console.sol";
 
 abstract contract xWinStrategyWithFee is xWinStrategy {
      
@@ -47,7 +48,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         lastManagerFeeCollection = block.number;
         collectionBlock = block.number + collectionPeriod;
         prevCollectionBlock = block.number;
-        watermarkUnitprice = 1e18;
+        watermarkUnitprice = (10 ** ERC20Upgradeable(_baseToken).decimals());
         blocksPerDay = 28800;
     }
 
@@ -90,7 +91,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
             uint totalProfit = (unitPrice - watermarkUnitprice) * totalUnits / 1e18;
             // collect performance fee
             uint feeAmt = totalProfit * performanceFee / 10000;
-            uint newShares = _getMintQty(feeAmt);        
+            uint newShares = _getMintQty(feeAmt); 
             _mint(strategyManager, newShares);
             watermarkUnitprice = unitPrice;
         }
@@ -123,7 +124,6 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
             uint256 discount = ILockedStake(lockingAddress).getFavor(msg.sender);
             fee = fee - ((fee * discount) / 10000);
         }
-
         IERC20Upgradeable(baseToken).safeTransfer(strategyManager, fee);
         return  _amtOut - fee;
     }
@@ -132,7 +132,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
     function _getMintQty(uint256 _depositAmt) internal virtual view returns (uint256 mintQty)  {
         
         _depositAmt = _convertTo18(_depositAmt, address(baseToken));
-        uint256 totalFundAfter = _getVaultValues();
+        uint256 totalFundAfter = this.getVaultValues();
         uint256 totalFundB4 = totalFundAfter > _depositAmt ?  totalFundAfter - _depositAmt : 0;
         mintQty = _getNewFundUnits(totalFundB4, totalFundAfter);
         return (mintQty);
@@ -191,12 +191,12 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
             return (
                 baseToken, 
                 getFundTotalSupply(), 
-                _getUnitPrice(), 
-                _convertTo18(_getVaultValues(), baseToken),
+                this.getUnitPrice(), 
+                this.getVaultValues(),
                 this.getUnitPriceInUSD(), 
-                _convertTo18(this.getVaultValuesInUSD(), stablecoinUSDAddr),
-                name,
-                symbol,
+                this.getVaultValuesInUSD(),
+                this.name(),
+                this.symbol(),
                 managerFee,
                 performanceFee,
                 strategyManager,

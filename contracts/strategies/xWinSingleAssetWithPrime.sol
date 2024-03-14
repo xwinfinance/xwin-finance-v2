@@ -8,7 +8,7 @@ import "../Interface/IOlaFinance.sol";
 import "../Interface/IxWinSwap.sol";
 import "../Interface/IxWinPriceMaster.sol";
 
-contract xWinSingleAssetOla is xWinStrategyWithFee {
+contract xWinSingleAsset is xWinStrategyWithFee {
     
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -21,8 +21,11 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
     uint256 public smallRatio;
     mapping(address => bool) public executors;
     
-    event SwitchProtocol(address fromProtocol, address toProtocol);
-
+    struct UserDataXVS {
+        uint256 shares;
+    }
+    mapping(address => UserDataXVS) public userDataMapXVS;
+    uint256 public totalUserSharesXVS;
     modifier onlyExecutor {
         require(
             executors[msg.sender],
@@ -42,6 +45,7 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         address _managerAddr
     ) initializer external {
         __xWinStrategyWithFee_init(name, symbol, _baseToken, _USDTokenAddr, _managerFee, _performanceFee, _collectionPeriod, _managerAddr);
+
         smallRatio = 100;
     }
 
@@ -56,7 +60,6 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         lendingRewardToken = IERC20Upgradeable(_lendingRewardToken);
     }
  
-
     function updateProperties(
         address olaFinance_,
         address rainMaker_
@@ -84,7 +87,7 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         return _convertTo18(_getUnitPrice(), baseToken);
     }
 
-    function _getUnitPrice() internal view override returns (uint256) {
+    function _getUnitPrice() internal override view returns(uint256){
         uint vValue = _getVaultValues();
         return (getFundTotalSupply() == 0 || vValue == 0) ? 1e18 : vValue * 1e18 / getFundTotalSupply();
     }
@@ -109,12 +112,12 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         nonReentrant
         whenNotPaused
         returns (uint256)
-    {        
+    {
         return _deposit(_amount, _slippage);
     }
 
     function _deposit(uint256 _amount, uint32 _slippage) internal returns (uint256) {
-        
+
         require(_amount > 0, "Nothing to deposit");
         _calcFundFee();
         IERC20Upgradeable(baseToken).safeTransferFrom(msg.sender, address(this), _amount);
@@ -122,7 +125,7 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         uint currentShares = _getMintQty(_amount);        
         
         _mint(msg.sender, currentShares);
-
+        
         if(!_isContract(msg.sender)){
             emitEvent.FundEvent("deposit", address(this), msg.sender, getUnitPrice(), _amount, currentShares);
         }
@@ -144,7 +147,7 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
     }
 
     function _withdraw(uint256 _amount, uint32 _slippage) internal returns (uint256){
-
+    
         require(_amount > 0, "Nothing to withdraw");
         require(_amount <= IERC20Upgradeable(address(this)).balanceOf(msg.sender), "Withdraw amount exceeds balance");
         _calcFundFee();
@@ -164,7 +167,6 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         
         _burn(msg.sender, _amount);
         IERC20Upgradeable(baseToken).safeTransfer(msg.sender, totalRefund);
-
         if(!_isContract(msg.sender)){
             emitEvent.FundEvent("withdraw", address(this), msg.sender, getUnitPrice(), totalRefund, _amount);
         }
@@ -187,14 +189,14 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         return (rate * valueInUSD / getDecimals(address(stablecoinUSDAddr)));
     }
     
-    function _getVaultValuesInUSD() internal view returns (uint256) {
+    function _getVaultValuesInUSD() internal view returns (uint256){
         uint exRateTargetBase = xWinPriceMaster.getPrice(baseToken, stablecoinUSDAddr); 
         uint exRateLendingBase = xWinPriceMaster.getPrice(address(lendingRewardToken), stablecoinUSDAddr); 
         
         // staking target token balance
         uint exchangeRateStaking = _OlaFinance.exchangeRateStored();
         uint balanceStakingToken = _OlaFinance.balanceOf(address(this));
-        uint balanceStakingTokenInUSD = balanceStakingToken == 0 ? 0 : balanceStakingToken * exchangeRateStaking * exRateTargetBase / getDecimals(baseToken) / 1e18;
+        uint balanceStakingTokenInUSD = balanceStakingToken == 0 ? 0 : balanceStakingToken * exchangeRateStaking * exRateTargetBase / getDecimals(baseToken)  / 1e18;
         
         // target token balance in the contract
         uint baseTokenBal = IERC20Upgradeable(baseToken).balanceOf(address(this));
@@ -221,6 +223,7 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
     function canSystemDeposit() public view returns (bool){
         
         uint fundValue = _getVaultValues();
+        if(fundValue == 0) return false;
         uint targetbal = IERC20Upgradeable(baseToken).balanceOf(address(this));
         uint percentage = targetbal * 10000 / fundValue;
         return percentage > smallRatio;
@@ -238,16 +241,16 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
         uint balanceToken = _OlaFinance.balanceOf(address(this));
         _removeOla(balanceToken);
         if (address(_rainMaker) != address(0)){
-            if(_rainMaker.compAccrued(address(this)) > 0){
-                _rainMaker.claimComp(address(this));
+            if(_rainMaker.venusAccrued(address(this)) > 0){
+                _rainMaker.claimVenus(address(this));
             }
         }
     }
 
     function reinvestClaimComp() public nonReentrant {
         if (address(_rainMaker) == address(0)) return;
-        if(_rainMaker.compAccrued(address(this)) > 0){
-            _rainMaker.claimComp(address(this));
+        if(_rainMaker.venusAccrued(address(this)) > 0){
+            _rainMaker.claimVenus(address(this));
         }
         uint bal = lendingRewardToken.balanceOf(address(this));
         if(bal > 0){
@@ -259,7 +262,7 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
 
     function getAccruedComp() public view returns (uint) {
         if (address(_rainMaker) == address(0)) return 0;
-        return _rainMaker.compAccrued(address(this));
+        return _rainMaker.venusAccrued(address(this));
     }
 
     function getStrategyInfo() external view returns (
@@ -311,4 +314,67 @@ contract xWinSingleAssetOla is xWinStrategyWithFee {
     function setRainMaker(address rainMaker_) public onlyOwner {
         _rainMaker = RainMakerForOlaLens(rainMaker_);
     }
+
+    // deposit XVS for XVS staking and prime boost
+    function depositXVS(uint256 _amount) public returns (uint256) {
+        require(_amount > 0, "Nothing to deposit");
+        lendingRewardToken.safeTransferFrom(msg.sender, address(this), _amount);
+        claimRewardsXVS();
+
+        uint256 currentShares = _getMintQtyXVS(_amount);    
+        totalUserSharesXVS += currentShares;
+        userDataMapXVS[msg.sender].shares += currentShares;
+        
+        // if(!_isContract(msg.sender)){
+        //     emitEvent.FundEvent("deposit", address(this), msg.sender, getUnitPrice(), _amount, currentShares);
+        // }
+        return currentShares;
+    }
+
+    // withdraw from XVS staking and prime boost
+    function withdrawXVS(uint256 _shares) public returns (uint256) {
+        require(_shares > 0, "Nothing to withdraw");
+        require(_shares <= IERC20Upgradeable(address(this)).balanceOf(msg.sender), "Withdraw amount exceeds balance");
+        claimRewardsXVS();
+        // swap any comp available into target token so that it is included into fund total values
+        uint256 redeemratio = _shares * 1e18 / totalUserSharesXVS;
+        
+        uint targetBalB4 = IERC20Upgradeable(baseToken).balanceOf(address(this));
+        uint totalRefund = redeemratio * targetBalB4 / 1e18;
+        
+        uint totalOlaAmount = IERC20Upgradeable(address(_OlaFinance)).balanceOf(address(this));
+        uint withdrawOlaAmt = redeemratio * totalOlaAmount / 1e18;
+        withdrawOlaAmt = totalOlaAmount < withdrawOlaAmt ? totalOlaAmount: withdrawOlaAmt;
+        if(withdrawOlaAmt > 0) _removeOla(withdrawOlaAmt);
+        uint targetBalAfter = IERC20Upgradeable(baseToken).balanceOf(address(this));
+        uint targetDiff = targetBalAfter - targetBalB4;
+        totalRefund = totalRefund + targetDiff;
+        
+        _burn(msg.sender, _shares);
+        IERC20Upgradeable(baseToken).safeTransfer(msg.sender, totalRefund);
+        if(!_isContract(msg.sender)){
+            emitEvent.FundEvent("withdraw", address(this), msg.sender, getUnitPrice(), totalRefund, _shares);
+        }
+        return totalRefund;
+    }
+
+    // claim XVS and prime boost, and reinvest into XVS pool, with a portion going into vBTCB pool
+    function claimRewardsXVS() public {
+    }
+
+    // collects prime token
+    function claimPrimeToken() public {
+    }
+
+    function getUnitPriceXVS() public {
+    }
+
+    function getVaultValueXVS(uint256 _amount) public {
+    }
+
+    function _getMintQtyXVS(uint256 _amount) internal returns (uint256) {
+
+    }
+
+
 }

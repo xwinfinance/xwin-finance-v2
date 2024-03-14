@@ -10,7 +10,7 @@ import "../xWinStrategyWithFee.sol";
 import "../Interface/IxWinPriceMaster.sol";
 // import "hardhat/console.sol";
 
-contract xWinDCA is xWinStrategyWithFee {
+contract xWinDCAArb is xWinStrategyWithFee {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC20Upgradeable public targetToken; // Cake token
@@ -26,19 +26,17 @@ contract xWinDCA is xWinStrategyWithFee {
 
     function initialize(
         address _baseToken,
-        IERC20Upgradeable _targetToken,
-        address _swapEngine,
-        address _priceMaster,
-        address baseTokenStaking_,
         address _USDTokenAddr,
         uint256 _managerFee,
         uint256 _performanceFee,
         uint256 _collectionPeriod,
-        address _managerAddr
+        address _managerAddr,
+        string calldata _name,
+        string calldata _symbol
     ) external initializer {
         __xWinStrategyWithFee_init(
-            "xWIN Dollar Average Vault",
-            "xDCA",
+            _name,
+            _symbol,
             _baseToken,
             _USDTokenAddr,
             _managerFee,
@@ -46,15 +44,23 @@ contract xWinDCA is xWinStrategyWithFee {
             _collectionPeriod,
             _managerAddr
         );
-        targetToken = _targetToken;
-        swapEngine = IxWinSwap(_swapEngine);
-        xWinPriceMaster = IxWinPriceMaster(_priceMaster);
-        _baseTokenStaking = IxWinSingleAssetInterface(baseTokenStaking_);
         lastInvestedBlock = block.number; // 28800;
-
-        maxPerSwap = 10000 * 10 ** ERC20Upgradeable(baseTokenStaking_).decimals();
         swapDuration = 360 * 28800;
         reinvestDuration = 28800;
+    }
+
+    function init(
+        IERC20Upgradeable _targetToken,
+        address _swapEngine,
+        address baseTokenStaking_,
+        address _xWinPriceMaster
+    ) external onlyOwner {
+        require(address(targetToken) == address(0), "already called init");
+        
+        targetToken = _targetToken;
+        swapEngine = IxWinSwap(_swapEngine);
+        _baseTokenStaking = IxWinSingleAssetInterface(baseTokenStaking_);
+        xWinPriceMaster = IxWinPriceMaster(_xWinPriceMaster);
     }
 
     modifier onlyExecutor() {
@@ -78,13 +84,15 @@ contract xWinDCA is xWinStrategyWithFee {
         whenNotPaused
         returns (uint256)
     {
-        return _deposit(_amount, _slippage);
+       return _deposit(_amount, _slippage);
     }
 
     function _deposit(uint256 _amount, uint32 _slippage) internal returns (uint256) {
-        
-        require(_amount > 0, "Nothing to deposit");
+
+         require(_amount > 0, "Nothing to deposit");
         _calcFundFee();
+        uint256 up = _getUnitPrice();
+        
         IERC20Upgradeable(baseToken).safeTransferFrom(
             msg.sender,
             address(this),
@@ -92,7 +100,7 @@ contract xWinDCA is xWinStrategyWithFee {
         );
 
         // record user balance in usdt
-        uint256 currentShares = _getMintQty(_amount);
+        uint256 currentShares = _calcMintQty(up);
         _mint(msg.sender, currentShares);
         // remaining into baseToken
         IERC20Upgradeable(baseToken).safeIncreaseAllowance(address(_baseTokenStaking), IERC20Upgradeable(baseToken).balanceOf(address(this)));
@@ -106,12 +114,23 @@ contract xWinDCA is xWinStrategyWithFee {
                 "deposit",
                 address(this),
                 msg.sender,
-                getUnitPrice(),
+                _convertTo18(up, baseToken),
                 _amount,
                 currentShares
             );
         }
         return currentShares;
+
+    }
+
+    function _calcMintQty(uint256 _unitPrice) internal view returns (uint256 mintQty)  {
+        
+        uint256 vaultValue = _getVaultValues();
+        uint256 totalSupply = getFundTotalSupply();
+        if(totalSupply == 0) return _convertTo18(vaultValue, baseToken); 
+        uint256 newTotalSupply = vaultValue * 1e18 / _unitPrice;
+        mintQty = newTotalSupply - totalSupply;
+        return mintQty;
     }
 
     function getAmountToSwap() public view returns (uint) {
@@ -162,7 +181,7 @@ contract xWinDCA is xWinStrategyWithFee {
     }
 
     function getVaultValues() public view override returns (uint vaultValue) {
-        return getVaultValuesInUSD();
+        return _convertTo18(_getVaultValues(), baseToken);
     }
 
     function _getVaultValues()
@@ -171,42 +190,46 @@ contract xWinDCA is xWinStrategyWithFee {
         override
         returns (uint vaultValue)
     {
-        return getVaultValuesInUSD();
+        uint valueInUSD = _getVaultValuesInUSD();
+        uint rate = xWinPriceMaster.getPrice(stablecoinUSDAddr, baseToken); 
+        return (rate * valueInUSD / getDecimals(address(stablecoinUSDAddr)));
     }
 
-    function getVaultValuesInUSD()
-        public
-        view
-        override
-        returns (uint vaultValue)
-    {
-        uint usdtBal = _convertTo18(
-            IERC20Upgradeable(baseToken).balanceOf(address(this)),
-            baseToken
-        );
-        uint olaStableBal = getStableValues();
-        uint olaTargetBBal = getTargetValues();
-        return olaStableBal + olaTargetBBal + usdtBal;
+    function getVaultValuesInUSD() public override view returns (uint vaultValue){        
+        return _convertTo18(_getVaultValuesInUSD(), stablecoinUSDAddr);
+    }
+
+    function _getVaultValuesInUSD() internal view returns (uint vaultValue){        
+        
+        uint exRateTargetBase = xWinPriceMaster.getPrice(baseToken, stablecoinUSDAddr); 
+        uint baseBal = IERC20Upgradeable(baseToken).balanceOf(address(this)); //ada
+        uint baseBalUSD = exRateTargetBase * baseBal / getDecimals(baseToken); //ada in usd
+
+        uint baseStakingUSD = 0;
+        if (baseToken != address(_baseTokenStaking)) {
+            uint baseStakingBal = IERC20Upgradeable(address(_baseTokenStaking)).balanceOf(address(this));
+            uint baseStakingUP = xWinPriceMaster.getPrice(address(_baseTokenStaking), stablecoinUSDAddr);
+            baseStakingUSD = baseStakingBal * baseStakingUP / getDecimals(address(_baseTokenStaking));
+        }
+
+        uint targetStakingBal = targetToken.balanceOf(address(this));
+        uint targetStakingUP = xWinPriceMaster.getPrice(address(targetToken), stablecoinUSDAddr);
+        uint targetStakingUSD = targetStakingBal * targetStakingUP / getDecimals(address(targetToken));
+        return baseBalUSD + baseStakingUSD + targetStakingUSD;
     }
 
     function getStableValues() public view returns (uint vaultValue) {
         return
-            (_baseTokenStaking.getUnitPriceInUSD() *
-                _baseTokenStaking.getUserBalance(address(this))) / 1e18;
+            (IxWinSingleAssetInterface(address(_baseTokenStaking)).getUnitPriceInUSD() *
+                IxWinSingleAssetInterface(address(_baseTokenStaking)).getUserBalance(address(this))) / 1e18;
     }
 
     function getTargetValues() public view returns (uint vaultValue) {
-        return
-            (xWinPriceMaster.getPrice(address(targetToken), stablecoinUSDAddr) *
-                targetToken.balanceOf(address(this))) / 1e18;
+        return xWinPriceMaster.getPrice(address(targetToken), stablecoinUSDAddr) * targetToken.balanceOf(address(this)) / getDecimals(address(targetToken)); 
     }
 
     function getBaseValues() public view returns (uint vaultValue) {
-        return
-            _convertTo18(
-                IERC20Upgradeable(baseToken).balanceOf(address(this)),
-                baseToken
-            );
+        return _convertTo18(IERC20Upgradeable(baseToken).balanceOf(address(this)), baseToken);
     }
 
     /**
@@ -287,6 +310,7 @@ contract xWinDCA is xWinStrategyWithFee {
             );
         }
         return totalRefund;
+
     }
 
     function emergencyUnWindPosition() external whenPaused onlyOwner {
@@ -331,26 +355,27 @@ contract xWinDCA is xWinStrategyWithFee {
      * @notice Calculates the price per share
      */
     function getUnitPrice() public view override returns (uint256) {
-        return _getUnitPrice();
+        return _convertTo18(_getUnitPrice(), baseToken); 
     }
 
     function _getUnitPrice() internal view override returns (uint256) {
-        uint vValue = getVaultValues();
-        return
-            (getFundTotalSupply() == 0 || vValue == 0)
-                ? 1e18
-                : (vValue * 1e18) / getFundTotalSupply();
+        uint vValue = _getVaultValues();
+        return (getFundTotalSupply() == 0 || vValue == 0) ? getDecimals(baseToken) : (vValue * 1e18) / getFundTotalSupply();
+
     }
 
     function getUnitPriceInUSD() public view override returns (uint256) {
         uint vValue = getVaultValuesInUSD();
-        return
-            (getFundTotalSupply() == 0 || vValue == 0)
-                ? 1e18
-                : (vValue * 1e18) / getFundTotalSupply();
+        return (getFundTotalSupply() == 0 || vValue == 0) ? 1e18 : vValue * 1e18 / getFundTotalSupply();
+
     }
 
     function getNextInvestBlock() public view returns (uint256) {
         return lastInvestedBlock + reinvestDuration;
     }
+
+    function getDecimals(address _token) private view returns (uint) {
+        return (10 ** ERC20Upgradeable(_token).decimals());
+    }
+
 }

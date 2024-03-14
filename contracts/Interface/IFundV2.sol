@@ -5,7 +5,7 @@ interface IFundV2 {
     function collectPlatformFee() external;
     function setPause() external;
     function setUnPause() external;
-    function MoveNonIndexNameToBase(address _tokenaddress) external returns (uint256 balanceToken, uint256 swapOutput);
+    function MoveNonIndexNameToBase(address _tokenaddress, uint32 _slippage) external returns (uint256 balanceToken, uint256 swapOutput);
     function emergencyRedeem(uint256 redeemUnit, address _investorAddress) external;
     function updateOtherProperties(uint256 newCycle, uint256 _ratio, uint256 _unitpriceMultiplier) external;
     function updatePlatformProperty(address newPlatformWallet, uint256 newPlatformFee) external;
