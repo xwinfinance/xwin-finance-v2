@@ -11,7 +11,7 @@
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "@uniswap/v3-periphery": "^1.4.3",
     "chai-almost": "^1.0.1",
-    "hardhat": "^2.21.0",
+    "hardhat": "^2.22.1",
     "hardhat-contract-sizer": "^2.6.1"
   },
   "devDependencies": {
