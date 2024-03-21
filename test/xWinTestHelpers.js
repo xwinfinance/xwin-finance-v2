@@ -1,4 +1,5 @@
 const { bsc, hardhatNode } = require("../bscMainnetAddresses.js");
+const { expect } = require("chai");
 
 const swapBNB = async (bnbAmount, to, receiverAddress) => {
   let wbnbERC = await ethers.getContractAt(
@@ -575,6 +576,11 @@ const deployLockStaking = async (signer, xWinMasterChef) => {
   return lockedStake;
 };
 
+const expectAlmostEquals = (a,b) => {
+  expect(a).gte(b * BigInt(99) / BigInt(100));
+  expect(a).lte(b * BigInt(101) / BigInt(100));
+}
+
 module.exports = {
   deployxWinSwapV3,
   deployTWAP,
@@ -588,4 +594,5 @@ module.exports = {
   deployxWinDefi,
   deployxWinMasterChef,
   deployLockStaking,
+  expectAlmostEquals
 };
