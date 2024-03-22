@@ -336,6 +336,7 @@ const deployxWinSingleAsset = async (
   xWinPrice,
   baseToken,
   stablecoinAddr,
+  xWinEmitEvent,
   managerFee = 0,
   performanceFee = 0
 ) => {
@@ -358,11 +359,17 @@ const deployxWinSingleAsset = async (
     lendingRewardToken,
     await xWinPrice.getAddress()
   );
+  await xWinSingleAsset.setExecutor(hardhatNode.publicAddress, true);
   console.log(
     symbol,
     " proxy deployed to address:",
     await xWinSingleAsset.getAddress()
   );
+
+  // update emit event contract
+  await xWinEmitEvent.setExecutor(xWinSingleAsset, true);
+  await xWinSingleAsset.setEmitEvent(await xWinEmitEvent.getAddress());
+
   await xWinSwap.registerStrategyContract(await xWinSingleAsset.getAddress(), baseToken);
 
   return xWinSingleAsset;
@@ -409,7 +416,7 @@ const deployxWinDCA = async (
   await xWinEmitEvent.setExecutor(xWinDCAAddr, true);
   await xWinDCA.setEmitEvent(await xWinEmitEvent.getAddress());
 
-  await xWinDCA.setExecutor(hardhatNode.publicAddress2, true);
+  await xWinDCA.setExecutor(hardhatNode.publicAddress, true);
   await xWinSwap.registerStrategyContract(xWinDCAAddr, bsc.USDT);
 
   return xWinDCA;
@@ -445,12 +452,12 @@ const deployxWinTokenAlpha = async (
     await xWinPriceMaster.getAddress()
   );
   const xWinTokenAlphaAddr = await xWinTokenAlpha.getAddress();
-  console.log("xWinAdaTokenAlpha deployed to address:", xWinTokenAlphaAddr);
+  console.log("xWinTokenAlpha deployed to address:", xWinTokenAlphaAddr);
 
   await xWinEmitEvent.setExecutor(xWinTokenAlphaAddr, true);
   await xWinTokenAlpha.setEmitEvent(await xWinEmitEvent.getAddress());
   //set executor
-  await xWinTokenAlpha.setExecutor(hardhatNode.publicAddress2, true);
+  await xWinTokenAlpha.setExecutor(hardhatNode.publicAddress, true);
   await xWinSwap.registerStrategyContract(xWinTokenAlphaAddr, baseTokenAddr);
 
   return xWinTokenAlpha;
