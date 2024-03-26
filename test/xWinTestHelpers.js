@@ -273,7 +273,6 @@ const deployxWinSwapV3 = async (signer) => {
       2
     );
 
-
   // 6. Setup USDT-CAKE
   await xWinSwap
     .connect(signer)
@@ -370,7 +369,10 @@ const deployxWinSingleAsset = async (
   await xWinEmitEvent.setExecutor(xWinSingleAsset, true);
   await xWinSingleAsset.setEmitEvent(await xWinEmitEvent.getAddress());
 
-  await xWinSwap.registerStrategyContract(await xWinSingleAsset.getAddress(), baseToken);
+  await xWinSwap.registerStrategyContract(
+    await xWinSingleAsset.getAddress(),
+    baseToken
+  );
 
   return xWinSingleAsset;
 };
@@ -583,10 +585,10 @@ const deployLockStaking = async (signer, xWinMasterChef) => {
   return lockedStake;
 };
 
-const expectAlmostEquals = (a,b) => {
-  expect(a).gte(b * BigInt(99) / BigInt(100));
-  expect(a).lte(b * BigInt(101) / BigInt(100));
-}
+const expectAlmostEquals = (a, b) => {
+  expect(a).gte((b * BigInt(99)) / BigInt(100));
+  expect(a).lte((b * BigInt(101)) / BigInt(100));
+};
 
 module.exports = {
   deployxWinSwapV3,
@@ -601,5 +603,5 @@ module.exports = {
   deployxWinDefi,
   deployxWinMasterChef,
   deployLockStaking,
-  expectAlmostEquals
+  expectAlmostEquals,
 };

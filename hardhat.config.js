@@ -1,17 +1,10 @@
 require("@openzeppelin/hardhat-upgrades");
 require("@nomicfoundation/hardhat-toolbox");
 
-const { privateKey, bscNode, ethereumNode, arbitrumNode, polygonNode} = require('./secrets.json');
-
+const { privateKey } = require("./secrets.json");
+const { getForkingConfig } = require("./fork.configs");
 // Forking configs: modify the values to determine the forking chain and block number
-const forkChain = 56;
-const forkBlockNumber = 1234567;
-
-
-
-
-
-
+const forkConfig = getForkingConfig();
 
 module.exports = {
   networks: {
@@ -21,9 +14,9 @@ module.exports = {
     },
     hardhat: {
       forking: {
-        url: bscNode,
-        blockNumber: 35227815,
-      }
+        url: forkConfig.RPCNode,
+        blockNumber: forkConfig.blockNumber,
+      },
     },
     testnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",

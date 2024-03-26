@@ -24,7 +24,10 @@ describe("DCA", function () {
 
       expect(await xWinDCA.baseToken()).to.equal(bsc.USDT);
       expectAlmostEquals(await xWinDCA.getUnitPrice(), ethers.parseEther("1"));
-      expectAlmostEquals(await xWinDCA.getVaultValues(), ethers.parseEther("0"));
+      expectAlmostEquals(
+        await xWinDCA.getVaultValues(),
+        ethers.parseEther("0")
+      );
       expectAlmostEquals(
         await xWinDCA.getVaultValuesInUSD(),
         ethers.parseEther("0")
@@ -33,18 +36,19 @@ describe("DCA", function () {
       await xWinDCA.deposit(defaultAmount);
 
       expectAlmostEquals(await xWinDCA.getUnitPrice(), ethers.parseEther("1"));
-      expectAlmostEquals(
-        await xWinDCA.getVaultValues(),
-        defaultAmount
-      );
+      expectAlmostEquals(await xWinDCA.getVaultValues(), defaultAmount);
       await network.provider.send("hardhat_mine", ["0x7080"]);
       await xWinDCA.systemDeposit();
 
-      expectAlmostEquals(await xWinDCA.getStableValues(), ethers.parseEther("9970"));
-      expectAlmostEquals(await xWinDCA.getTargetValues(), ethers.parseEther("27.7"));
+      expectAlmostEquals(
+        await xWinDCA.getStableValues(),
+        ethers.parseEther("9970")
+      );
+      expectAlmostEquals(
+        await xWinDCA.getTargetValues(),
+        ethers.parseEther("27.7")
+      );
       expectAlmostEquals(await xWinDCA.getBaseValues(), ethers.parseEther("0"));
-  
-
 
       await xWinDCA.connect(accounts[0]).deposit(defaultAmount);
 
@@ -56,17 +60,20 @@ describe("DCA", function () {
 
       await network.provider.send("hardhat_mine", ["0x7080"]);
       await xWinDCA.systemDeposit();
-      expectAlmostEquals(await xWinDCA.getStableValues(), ethers.parseEther("19910"));
-      expectAlmostEquals(await xWinDCA.getTargetValues(), ethers.parseEther("83"));
+      expectAlmostEquals(
+        await xWinDCA.getStableValues(),
+        ethers.parseEther("19910")
+      );
+      expectAlmostEquals(
+        await xWinDCA.getTargetValues(),
+        ethers.parseEther("83")
+      );
       expectAlmostEquals(await xWinDCA.getBaseValues(), ethers.parseEther("0"));
 
       await xWinDCA.withdraw(await xWinDCA.balanceOf(await owner.getAddress()));
 
       expectAlmostEquals(await xWinDCA.getUnitPrice(), ethers.parseEther("1"));
-      expectAlmostEquals(
-        await xWinDCA.getVaultValues(),
-        defaultAmount
-      );
+      expectAlmostEquals(await xWinDCA.getVaultValues(), defaultAmount);
     });
   });
 });
