@@ -15,6 +15,7 @@ describe("xWinPriceMaster", function () {
       const { owner, accounts, xWinPriceMaster } = await loadFixture(
         xWinFixture
       );
+      // chainlink price
       expectAlmostEquals(
         await xWinPriceMaster.getPrice(bsc.USDT, bsc.BTCB),
         ethers.parseUnits("23480", "gwei")
@@ -31,10 +32,14 @@ describe("xWinPriceMaster", function () {
         await xWinPriceMaster.getPrice(bsc.USDT, bsc.XVS),
         ethers.parseEther("0.08495")
       );
+
+      // TWAP price
       expectAlmostEquals(
         await xWinPriceMaster.getPrice(bsc.USDT, bsc.xWinToken),
         ethers.parseEther("7.18")
       );
+
+      // LP Token price
       expectAlmostEquals(
         await xWinPriceMaster.getPrice(bsc.USDT, bsc.XWIN_BNB_pancakeLP),
         ethers.parseEther("0.0717")

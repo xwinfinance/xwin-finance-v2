@@ -84,10 +84,5 @@ module.exports = {
     enabled: false,
     currency: "ETH",
     gasPrice: 0.1,
-  },
-  // etherscan: {
-  //   apiKey: {
-  //     bsc: ''
-  //   }
-  // }
+  }
 };

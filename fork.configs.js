@@ -6,6 +6,8 @@ const {
 } = require("./secrets.json");
 
 // Update hardhat forking configurations here
+// Use chain=56 blockNumberBSC=35227815 for test scripts
+// Or use chain 31337 for test scripts
 const forkConfigs = {
   chainID: 56,
   blockNumberBSC: 35227815,
@@ -33,6 +35,13 @@ const getForkingConfig = () => {
     return {
       RPCNode: polygonNode,
       blockNumber: forkConfigs.blockNumberPolygon,
+    };
+  }
+
+  if (forkConfigs.chainID == 31337) {
+    return {
+      RPCNode: bscNode,
+      blockNumber: 35227815,
     };
   }
 

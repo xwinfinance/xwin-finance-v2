@@ -14,7 +14,9 @@ https://skynet.certik.com/projects/xwinfinance
 
 ## Support Network
 * BNB Network - LIVE
-* ETHEREUM Network - TO BE SUPPORTED in Q4 2023
+* Polygon Network - LIVE
+* Arbitrum Network - LIVE
+* ETHEREUM Network - TO BE SUPPORTED in Q4 2024
 
 ## Main Smart Contracts
 
@@ -67,6 +69,42 @@ fTACombo|  xWIN TA Combo | 0xaaFF5eFe1376474a520FFe9129d8Aa8d7422AAbe
 * https://app.xwin.finance
 * https://xwin.finance
 
+
+### Hardhat Environment
+
+This project uses the hardhat development environment. To run the project first, run the following command:
+
+```bash
+npm install
+```
+
+Then create a secrets.json file with the following properties:
+
+```json
+{
+    "privateKey": "<your private key>",
+    "bscNode": "<your bsc archive node>",
+    "ethereumNode": "<your eth archive node>",
+    "arbitrumNode": "<your arb archive node>",
+    "polygonNode" : "<your polygon archive node>"
+}
+```
+
+The private key is for live networks, and the nodes are for running local forks of the respective blockchain. An archive node is required to run the forking feature. All the tests are done using the bscNode.
+
+To compile the contracts, run the following command:
+
+```bash
+npx hardhat compile
+```
+
+To run the tests, run the following command:
+
+```bash
+npx hardhat test
+```
+
+To modify the local fork chainId or blocknumber, go to [fork.configs.js](fork.configs.js).
 
 ## Authors
 
