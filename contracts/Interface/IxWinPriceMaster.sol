@@ -2,5 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface IxWinPriceMaster {
-    function getPrice(address _from, address _to) external view returns (uint rate);
+    function getPrice(
+        address _from,
+        address _to
+    ) external view returns (uint rate);
 }

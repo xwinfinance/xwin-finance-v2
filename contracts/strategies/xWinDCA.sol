@@ -51,7 +51,9 @@ contract xWinDCA is xWinStrategyWithFee {
         _baseTokenStaking = IxWinSingleAssetInterface(baseTokenStaking_);
         lastInvestedBlock = block.number; // 28800;
 
-        maxPerSwap = 10000 * 10 ** ERC20Upgradeable(_baseToken).decimals();
+        maxPerSwap =
+            10000 *
+            10 ** ERC20Upgradeable(baseTokenStaking_).decimals();
         swapDuration = 360 * 28800;
         reinvestDuration = 28800;
     }
@@ -69,6 +71,20 @@ contract xWinDCA is xWinStrategyWithFee {
     function deposit(
         uint256 _amount
     ) external override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(_amount, 0);
+    }
+
+    function deposit(
+        uint256 _amount,
+        uint32 _slippage
+    ) public override nonReentrant whenNotPaused returns (uint256) {
+        return _deposit(_amount, _slippage);
+    }
+
+    function _deposit(
+        uint256 _amount,
+        uint32 _slippage
+    ) internal returns (uint256) {
         require(_amount > 0, "Nothing to deposit");
         _calcFundFee();
         IERC20Upgradeable(baseToken).safeTransferFrom(
@@ -80,11 +96,14 @@ contract xWinDCA is xWinStrategyWithFee {
         // record user balance in usdt
         uint256 currentShares = _getMintQty(_amount);
         _mint(msg.sender, currentShares);
-
         // remaining into baseToken
-        IERC20Upgradeable(baseToken).safeIncreaseAllowance(address(_baseTokenStaking), IERC20Upgradeable(baseToken).balanceOf(address(this)));
-        _baseTokenStaking.deposit(
+        IERC20Upgradeable(baseToken).safeIncreaseAllowance(
+            address(_baseTokenStaking),
             IERC20Upgradeable(baseToken).balanceOf(address(this))
+        );
+        _baseTokenStaking.deposit(
+            IERC20Upgradeable(baseToken).balanceOf(address(this)),
+            _slippage
         );
 
         if (!_isContract(msg.sender)) {
@@ -130,7 +149,10 @@ contract xWinDCA is xWinStrategyWithFee {
         uint stableToswap = IERC20Upgradeable(baseToken).balanceOf(
             address(this)
         );
-        IERC20Upgradeable(baseToken).safeIncreaseAllowance(address(swapEngine), stableToswap);
+        IERC20Upgradeable(baseToken).safeIncreaseAllowance(
+            address(swapEngine),
+            stableToswap
+        );
         uint targetTokenAmt = swapEngine.swapTokenToToken(
             stableToswap,
             baseToken,
@@ -201,7 +223,21 @@ contract xWinDCA is xWinStrategyWithFee {
      */
     function withdraw(
         uint256 _shares
-    ) external override nonReentrant whenNotPaused returns (uint) {
+    ) external override nonReentrant whenNotPaused returns (uint256) {
+        return _withdraw(_shares, 0);
+    }
+
+    function withdraw(
+        uint256 _shares,
+        uint32 _slippage
+    ) public override nonReentrant whenNotPaused returns (uint) {
+        return _withdraw(_shares, _slippage);
+    }
+
+    function _withdraw(
+        uint256 _shares,
+        uint32 _slippage
+    ) internal returns (uint256) {
         require(_shares > 0, "Nothing to withdraw");
         require(
             _shares <= IERC20Upgradeable(address(this)).balanceOf(msg.sender),
@@ -226,11 +262,15 @@ contract xWinDCA is xWinStrategyWithFee {
             withdrawShares = totalTargetTokenShares < withdrawShares
                 ? totalTargetTokenShares
                 : withdrawShares;
-            targetToken.safeIncreaseAllowance(address(swapEngine), withdrawShares);
+            targetToken.safeIncreaseAllowance(
+                address(swapEngine),
+                withdrawShares
+            );
             uint swapOut = swapEngine.swapTokenToToken(
                 withdrawShares,
                 address(targetToken),
-                baseToken
+                baseToken,
+                _slippage
             );
             totalRefund = totalRefund + swapOut;
         }
@@ -239,7 +279,10 @@ contract xWinDCA is xWinStrategyWithFee {
             withdrawShares = totalStablecoinShares < withdrawShares
                 ? totalStablecoinShares
                 : withdrawShares;
-            uint stableOut = _baseTokenStaking.withdraw(withdrawShares);
+            uint stableOut = _baseTokenStaking.withdraw(
+                withdrawShares,
+                _slippage
+            );
             totalRefund = totalRefund + stableOut;
         }
 
@@ -272,11 +315,11 @@ contract xWinDCA is xWinStrategyWithFee {
         uint targetSwap = targetToken.balanceOf(address(this));
         if (targetSwap > 0)
             targetToken.safeIncreaseAllowance(address(swapEngine), targetSwap);
-            swapEngine.swapTokenToToken(
-                targetSwap,
-                address(targetToken),
-                baseToken
-            );
+        swapEngine.swapTokenToToken(
+            targetSwap,
+            address(targetToken),
+            baseToken
+        );
     }
 
     // update properties

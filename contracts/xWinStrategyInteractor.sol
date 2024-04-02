@@ -7,12 +7,8 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./xWinStrategy.sol";
 
 contract xWinStrategyInteractor is OwnableUpgradeable, PausableUpgradeable {
-
-    modifier onlyAdmin {
-        require(
-            admins[msg.sender],
-            "Only admin can call this function."
-        );
+    modifier onlyAdmin() {
+        require(admins[msg.sender], "Only admin can call this function.");
         _;
     }
 
@@ -24,7 +20,8 @@ contract xWinStrategyInteractor is OwnableUpgradeable, PausableUpgradeable {
     mapping(address => bool) public admins;
     mapping(address => StrategyData) public xWinStrategies;
     uint256[10] private __gap;
-    function __xWinStrategyInteractor_init() onlyInitializing internal {
+
+    function __xWinStrategyInteractor_init() internal onlyInitializing {
         __Ownable_init();
         __Pausable_init();
         admins[msg.sender] = true;
@@ -35,12 +32,15 @@ contract xWinStrategyInteractor is OwnableUpgradeable, PausableUpgradeable {
         admins[_wallet] = _allow;
     }
 
-    function isAdmin(address _wallet) public view returns (bool)  {
+    function isAdmin(address _wallet) public view returns (bool) {
         return admins[_wallet];
     }
 
     // registers and activates a strat
-    function registerStrategyContract(address _newStrat, address _baseToken) external onlyAdmin {
+    function registerStrategyContract(
+        address _newStrat,
+        address _baseToken
+    ) external onlyAdmin {
         require(_baseToken != address(0), "_baseToken input is 0");
         StrategyData memory data;
         data.baseToken = _baseToken;
@@ -67,21 +67,30 @@ contract xWinStrategyInteractor is OwnableUpgradeable, PausableUpgradeable {
     function isActivexWinStrategy(address _strat) public view returns (bool) {
         return xWinStrategies[_strat].isActive;
     }
-    
-    function getStrategyBaseToken(address _strat) public view returns (address) {
+
+    function getStrategyBaseToken(
+        address _strat
+    ) public view returns (address) {
         return xWinStrategies[_strat].baseToken;
     }
 
-
-    function depositToStrategy(uint256 _amount, address _strat) internal returns (uint256) {
+    function depositToStrategy(
+        uint256 _amount,
+        address _strat
+    ) internal returns (uint256) {
         require(isxWinStrategy(_strat), "xWinStrategy: not strategy contract");
-        require(isActivexWinStrategy(_strat), "xWinStrategy: it not xwin strategy");
+        require(
+            isActivexWinStrategy(_strat),
+            "xWinStrategy: it not xwin strategy"
+        );
         return xWinStrategy(_strat).deposit(_amount);
     }
 
-    function withdrawFromStrategy(uint256 _amount, address _strat) internal returns (uint256) {
+    function withdrawFromStrategy(
+        uint256 _amount,
+        address _strat
+    ) internal returns (uint256) {
         require(isxWinStrategy(_strat), "xWinStrategy: not strategy contract");
         return xWinStrategy(_strat).withdraw(_amount);
     }
-
 }

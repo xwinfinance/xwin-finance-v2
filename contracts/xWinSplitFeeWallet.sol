@@ -116,4 +116,20 @@ contract xWinSplitFeeWallet is OwnableUpgradeable {
     function setPeriod(uint _newPeriod) external onlyOwner {
         period = _newPeriod;
     }
+
+    function tokenLength() public view returns (uint256) {
+        return tokens.length;
+    }
+
+    function managersLength() public view returns (uint256) {
+        return managers.length;
+    }
+
+    function managerAll() public view returns (Manager[] memory) {
+        return managers;
+    }
+
+    function managerRatio(uint index) public view returns (Manager memory) {
+        return managers[index];
+    }
 }

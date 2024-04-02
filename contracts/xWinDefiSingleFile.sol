@@ -1,5 +1,6 @@
 pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
+
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 /*
@@ -42,7 +43,10 @@ contract Context {
 contract Ownable is Context {
     address private _owner;
 
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
@@ -64,7 +68,7 @@ contract Ownable is Context {
      * @dev Throws if called by any account other than the owner.
      */
     modifier onlyOwner() {
-        require(_owner == _msgSender(), 'Ownable: caller is not the owner');
+        require(_owner == _msgSender(), "Ownable: caller is not the owner");
         _;
     }
 
@@ -92,7 +96,10 @@ contract Ownable is Context {
      * @dev Transfers ownership of the contract to a new account (`newOwner`).
      */
     function _transferOwnership(address newOwner) internal {
-        require(newOwner != address(0), 'Ownable: new owner is the zero address');
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
         emit OwnershipTransferred(_owner, newOwner);
         _owner = newOwner;
     }
@@ -131,7 +138,7 @@ contract ReentrancyGuard {
 
     uint256 private _status;
 
-    constructor () internal {
+    constructor() internal {
         _status = _NOT_ENTERED;
     }
 
@@ -183,7 +190,7 @@ library SafeMath {
      */
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
-        require(c >= a, 'SafeMath: addition overflow');
+        require(c >= a, "SafeMath: addition overflow");
 
         return c;
     }
@@ -199,7 +206,7 @@ library SafeMath {
      * - Subtraction cannot overflow.
      */
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return sub(a, b, 'SafeMath: subtraction overflow');
+        return sub(a, b, "SafeMath: subtraction overflow");
     }
 
     /**
@@ -242,7 +249,7 @@ library SafeMath {
         }
 
         uint256 c = a * b;
-        require(c / a == b, 'SafeMath: multiplication overflow');
+        require(c / a == b, "SafeMath: multiplication overflow");
 
         return c;
     }
@@ -260,7 +267,7 @@ library SafeMath {
      * - The divisor cannot be zero.
      */
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return div(a, b, 'SafeMath: division by zero');
+        return div(a, b, "SafeMath: division by zero");
     }
 
     /**
@@ -300,7 +307,7 @@ library SafeMath {
      * - The divisor cannot be zero.
      */
     function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        return mod(a, b, 'SafeMath: modulo by zero');
+        return mod(a, b, "SafeMath: modulo by zero");
     }
 
     /**
@@ -394,11 +401,17 @@ library Address {
      * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(address(this).balance >= amount, 'Address: insufficient balance');
+        require(
+            address(this).balance >= amount,
+            "Address: insufficient balance"
+        );
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{value: amount}('');
-        require(success, 'Address: unable to send value, recipient may have reverted');
+        (bool success, ) = recipient.call{value: amount}("");
+        require(
+            success,
+            "Address: unable to send value, recipient may have reverted"
+        );
     }
 
     /**
@@ -419,8 +432,11 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-        return functionCall(target, data, 'Address: low-level call failed');
+    function functionCall(
+        address target,
+        bytes memory data
+    ) internal returns (bytes memory) {
+        return functionCall(target, data, "Address: low-level call failed");
     }
 
     /**
@@ -453,7 +469,13 @@ library Address {
         bytes memory data,
         uint256 value
     ) internal returns (bytes memory) {
-        return functionCallWithValue(target, data, value, 'Address: low-level call with value failed');
+        return
+            functionCallWithValue(
+                target,
+                data,
+                value,
+                "Address: low-level call with value failed"
+            );
     }
 
     /**
@@ -468,7 +490,10 @@ library Address {
         uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
-        require(address(this).balance >= value, 'Address: insufficient balance for call');
+        require(
+            address(this).balance >= value,
+            "Address: insufficient balance for call"
+        );
         return _functionCallWithValue(target, data, value, errorMessage);
     }
 
@@ -478,10 +503,12 @@ library Address {
         uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
-        require(isContract(target), 'Address: call to non-contract');
+        require(isContract(target), "Address: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.call{value: weiValue}(data);
+        (bool success, bytes memory returndata) = target.call{value: weiValue}(
+            data
+        );
         if (success) {
             return returndata;
         } else {
@@ -539,7 +566,10 @@ interface IBEP20 {
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -548,7 +578,10 @@ interface IBEP20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address _owner, address spender) external view returns (uint256);
+    function allowance(
+        address _owner,
+        address spender
+    ) external view returns (uint256);
 
     /**
      * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
@@ -593,7 +626,11 @@ interface IBEP20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 }
 
 /**
@@ -609,12 +646,11 @@ library SafeBEP20 {
     using SafeMath for uint256;
     using Address for address;
 
-    function safeTransfer(
-        IBEP20 token,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    function safeTransfer(IBEP20 token, address to, uint256 value) internal {
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.transfer.selector, to, value)
+        );
     }
 
     function safeTransferFrom(
@@ -623,7 +659,10 @@ library SafeBEP20 {
         address to,
         uint256 value
     ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.transferFrom.selector, from, to, value)
+        );
     }
 
     /**
@@ -644,9 +683,12 @@ library SafeBEP20 {
         // solhint-disable-next-line max-line-length
         require(
             (value == 0) || (token.allowance(address(this), spender) == 0),
-            'SafeBEP20: approve from non-zero to non-zero allowance'
+            "SafeBEP20: approve from non-zero to non-zero allowance"
         );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.approve.selector, spender, value)
+        );
     }
 
     function safeIncreaseAllowance(
@@ -654,8 +696,17 @@ library SafeBEP20 {
         address spender,
         uint256 value
     ) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).add(value);
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+        uint256 newAllowance = token.allowance(address(this), spender).add(
+            value
+        );
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(
+                token.approve.selector,
+                spender,
+                newAllowance
+            )
+        );
     }
 
     function safeDecreaseAllowance(
@@ -665,9 +716,16 @@ library SafeBEP20 {
     ) internal {
         uint256 newAllowance = token.allowance(address(this), spender).sub(
             value,
-            'SafeBEP20: decreased allowance below zero'
+            "SafeBEP20: decreased allowance below zero"
         );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(
+                token.approve.selector,
+                spender,
+                newAllowance
+            )
+        );
     }
 
     /**
@@ -681,96 +739,101 @@ library SafeBEP20 {
         // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
         // the target address contains contract code and also asserts for success in the low-level call.
 
-        bytes memory returndata = address(token).functionCall(data, 'SafeBEP20: low-level call failed');
+        bytes memory returndata = address(token).functionCall(
+            data,
+            "SafeBEP20: low-level call failed"
+        );
         if (returndata.length > 0) {
             // Return data is optional
             // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), 'SafeBEP20: BEP20 operation did not succeed');
+            require(
+                abi.decode(returndata, (bool)),
+                "SafeBEP20: BEP20 operation did not succeed"
+            );
         }
     }
 }
 
 library xWinLib {
-   
     // Info of each pool.
     struct PoolInfo {
-        address lpToken;           
-        uint256 rewardperblock;       
-        uint256 multiplier;       
+        address lpToken;
+        uint256 rewardperblock;
+        uint256 multiplier;
     }
-    
+
     struct UserInfo {
-        uint256 amount;     
-        uint256 blockstart; 
+        uint256 amount;
+        uint256 blockstart;
     }
 
     struct TradeParams {
-      address xFundAddress;
-      uint256 amount;
-      uint256 priceImpactTolerance;
-      uint256 deadline;
-      bool returnInBase;
-      address referral;
-    }  
-   
-    struct transferData {
-      
-      address[] targetNamesAddress;
-      uint256 totalTrfAmt;
-      uint256 totalUnderlying;
-      uint256 qtyToTrfAToken;
-    }
-    
-    struct xWinReward {
-      uint256 blockstart;
-      uint256 accBasetoken;
-      uint256 accMinttoken;
-      uint256 previousRealizedQty;
-    }
-    
-    struct xWinReferral {
-      address referral;
-    }
-    
-    struct UnderWeightData {
-      uint256 activeWeight;
-      uint256 fundWeight;
-      bool overweight;
-      address token;
-    }
-    
-    struct DeletedNames {
-      address token;
-      uint256 targetWeight;
-    }
-    
-    struct PancakePriceToken {
-        string tokenname;
-        address addressToken;     
+        address xFundAddress;
+        uint256 amount;
+        uint256 priceImpactTolerance;
+        uint256 deadline;
+        bool returnInBase;
+        address referral;
     }
 
+    struct transferData {
+        address[] targetNamesAddress;
+        uint256 totalTrfAmt;
+        uint256 totalUnderlying;
+        uint256 qtyToTrfAToken;
+    }
+
+    struct xWinReward {
+        uint256 blockstart;
+        uint256 accBasetoken;
+        uint256 accMinttoken;
+        uint256 previousRealizedQty;
+    }
+
+    struct xWinReferral {
+        address referral;
+    }
+
+    struct UnderWeightData {
+        uint256 activeWeight;
+        uint256 fundWeight;
+        bool overweight;
+        address token;
+    }
+
+    struct DeletedNames {
+        address token;
+        uint256 targetWeight;
+    }
+
+    struct PancakePriceToken {
+        string tokenname;
+        address addressToken;
+    }
 }
 
 // helper methods for interacting with BEP20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
-    function safeApprove(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
+    function safeApprove(address token, address to, uint256 value) internal {
         // bytes4(keccak256(bytes('approve(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
+        (bool success, bytes memory data) = token.call(
+            abi.encodeWithSelector(0x095ea7b3, to, value)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: APPROVE_FAILED"
+        );
     }
 
-    function safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
+    function safeTransfer(address token, address to, uint256 value) internal {
         // bytes4(keccak256(bytes('transfer(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
+        (bool success, bytes memory data) = token.call(
+            abi.encodeWithSelector(0xa9059cbb, to, value)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: TRANSFER_FAILED"
+        );
     }
 
     function safeTransferFrom(
@@ -780,89 +843,110 @@ library TransferHelper {
         uint256 value
     ) internal {
         // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+        (bool success, bytes memory data) = token.call(
+            abi.encodeWithSelector(0x23b872dd, from, to, value)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: TRANSFER_FROM_FAILED"
+        );
     }
 
     function safeTransferBNB(address to, uint256 value) internal {
         (bool success, ) = to.call{value: value}(new bytes(0));
-        require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
+        require(success, "TransferHelper: BNB_TRANSFER_FAILED");
     }
 }
 
 interface xWinFund {
-    
-    function getManagerFee() external view returns(uint256);
+    function getManagerFee() external view returns (uint256);
+
     function getTargetWeight(address addr) external view returns (uint256);
-    function getWhoIsManager() external view returns(address mangerAddress);
-    function getBalance(address fromAdd) external view returns (uint256 balance);
+
+    function getWhoIsManager() external view returns (address mangerAddress);
+
+    function getBalance(
+        address fromAdd
+    ) external view returns (uint256 balance);
+
     function getFundValues() external view returns (uint256);
-    function getTargetWeightQty(address targetAdd, uint256 srcQty) external view returns (uint256);
+
+    function getTargetWeightQty(
+        address targetAdd,
+        uint256 srcQty
+    ) external view returns (uint256);
+
     function updateManager(address managerAdd) external payable;
+
     function updateManagerFee(uint256 newFeebps) external payable;
+
     function updateRebalancePeriod(uint newCycle) external payable;
+
     function updateProtocol(address _newProtocol) external;
-    
+
     function Redeem(
         xWinLib.TradeParams memory _tradeParams,
         address _investorAddress
     ) external payable returns (uint256);
-        
+
     function Rebalance(
-        address[] calldata _toAddresses, 
+        address[] calldata _toAddresses,
         uint256[] calldata _targetWeight,
         uint256 deadline,
         uint256 priceImpactTolerance
-        ) external payable returns (uint256 baseccyBal);
-        
+    ) external payable returns (uint256 baseccyBal);
+
     function Subscribe(
         xWinLib.TradeParams memory _tradeParams,
         address _investorAddress
     ) external payable returns (uint256);
-        
+
     function MoveNonIndexNameToBase(
         address _tokenaddress,
         uint256 deadline,
         uint256 priceImpactTolerance
-        ) external returns (uint256 balanceToken, uint256 swapOutput);
-        
+    ) external returns (uint256 balanceToken, uint256 swapOutput);
+
     function CreateTargetNames(
-        address[] calldata _toAddresses, 
+        address[] calldata _toAddresses,
         uint256[] calldata _targetWeight
     ) external payable;
-    
-    function emergencyRedeem(uint256 redeemUnit, address _investorAddress) external payable; 
+
+    function emergencyRedeem(
+        uint256 redeemUnit,
+        address _investorAddress
+    ) external payable;
+
     function emergencyRemoveFromFarm() external;
-   
-    function getUnitPrice() external view returns(uint256 unitprice);
-    function getUnitPriceInUSD() external view returns(uint256 unitprice);
-    function getTargetNamesAddress() external view returns (address[] memory _targetNamesAddress);
+
+    function getUnitPrice() external view returns (uint256 unitprice);
+
+    function getUnitPriceInUSD() external view returns (uint256 unitprice);
+
+    function getTargetNamesAddress()
+        external
+        view
+        returns (address[] memory _targetNamesAddress);
 }
 
-
 interface xWinStake {
-    
     function StakeReward(
         address payable _investorAddress,
         uint256 rewardQty,
         uint256 bnbQty,
         uint256 deadline
-        ) external payable; 
-        
+    ) external payable;
+
     function GetQuotes(
-        uint256 rewardQty, 
+        uint256 rewardQty,
         uint256 baseQty,
         address targetToken
-        ) external view 
-        returns (uint amountB, uint amountA, uint amountOut); 
+    ) external view returns (uint amountB, uint amountA, uint amountOut);
 }
 
-
 contract xWinDefiProtocol is Ownable, ReentrancyGuard {
-    
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
-
 
     string public name;
     address public xWinToken;
@@ -873,48 +957,79 @@ contract xWinDefiProtocol is Ownable, ReentrancyGuard {
     uint256 private platformFeeBps;
     uint256 public startblock;
     bool public emergencyOn = false;
-    mapping (uint256 => mapping (address => xWinLib.UserInfo)) public userInfo;
+    mapping(uint256 => mapping(address => xWinLib.UserInfo)) public userInfo;
     mapping(address => bool) public isxwinFund;
     xWinLib.PoolInfo[] public poolInfo;
-    
+
     mapping(address => xWinLib.xWinReward) public xWinRewards;
     mapping(address => xWinLib.xWinReferral) public xWinReferral;
     uint256 private rewardperuint = 95129375951;
     uint256 private referralperunit = 100000000000000000;
     uint256 private managerRewardperunit = 50000000000000000;
     uint256 public rewardRemaining = 60000000000000000000000000;
-    
+
     event Received(address, uint);
 
-    event _MoveNonIndexNameToBaseEvent(address indexed from, address indexed toFund, address tokenAddress, uint256 amount, uint swapOutput);
-    event _RebalanceAllInOne(address indexed from, address indexed toFund, uint256 baseBalance, uint txnTime);
-    event _Subscribe(address indexed from, address indexed toFund, uint256 subsAmt, uint256 mintQty);
-    event _Redeem(address indexed from, address indexed toFund, uint256 redeemUnit, uint256 rewardQty, uint256 redeemratio);
-    event _CreateTarget(address indexed from, address indexed toFund, address[] newTargets, uint256[] newWeight, uint txnTime);
+    event _MoveNonIndexNameToBaseEvent(
+        address indexed from,
+        address indexed toFund,
+        address tokenAddress,
+        uint256 amount,
+        uint swapOutput
+    );
+    event _RebalanceAllInOne(
+        address indexed from,
+        address indexed toFund,
+        uint256 baseBalance,
+        uint txnTime
+    );
+    event _Subscribe(
+        address indexed from,
+        address indexed toFund,
+        uint256 subsAmt,
+        uint256 mintQty
+    );
+    event _Redeem(
+        address indexed from,
+        address indexed toFund,
+        uint256 redeemUnit,
+        uint256 rewardQty,
+        uint256 redeemratio
+    );
+    event _CreateTarget(
+        address indexed from,
+        address indexed toFund,
+        address[] newTargets,
+        uint256[] newWeight,
+        uint txnTime
+    );
     event _StakeMyReward(address indexed from, uint256 rewardQty);
     event _WithdrawReward(address indexed from, uint256 rewardQty);
     event _DepositFarm(address indexed from, uint256 pid, uint256 amount);
     event _WithdrawFarm(address indexed from, uint256 pid, uint256 amount);
-    event _EmergencyRedeem(address indexed user, address fundaddress, uint256 amount);
-    
-    modifier onlyEmergency {
+    event _EmergencyRedeem(
+        address indexed user,
+        address fundaddress,
+        uint256 amount
+    );
+
+    modifier onlyEmergency() {
         require(emergencyOn == true, "only emergency can call this");
         _;
     }
-    
-    modifier onlyNonEmergency {
+
+    modifier onlyNonEmergency() {
         require(emergencyOn == false, "only non-emergency can call this");
         _;
     }
-    
-    constructor (
-            uint256 _platformFeeBps,
-            address _platformWallet,
-            address _xwinBenefitPool,
-            address _stakeAddress,
-            address _xWinToken
-        ) public {
-        
+
+    constructor(
+        uint256 _platformFeeBps,
+        address _platformWallet,
+        address _xwinBenefitPool,
+        address _stakeAddress,
+        address _xWinToken
+    ) public {
         name = "xWinDefi Protocol";
         platformWallet = _platformWallet;
         xwinBenefitPool = _xwinBenefitPool;
@@ -924,72 +1039,83 @@ contract xWinDefiProtocol is Ownable, ReentrancyGuard {
         stakeAddress = _stakeAddress;
         xWinToken = _xWinToken;
     }
-    
+
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
-    
-    function addxwinFund(address[] calldata _fundaddress, bool [] memory _isxwinFund) public onlyOwner {
-        
+
+    function addxwinFund(
+        address[] calldata _fundaddress,
+        bool[] memory _isxwinFund
+    ) public onlyOwner {
         for (uint i = 0; i < _fundaddress.length; i++) {
             isxwinFund[_fundaddress[i]] = _isxwinFund[i];
         }
     }
-    
+
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
-    
+
     // Add a new lp to the pool. Can only be called by the owner.
     // DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(address _lpToken, uint256 _rewardperblock, uint256 _multiplier) public onlyOwner onlyNonEmergency {
-        
-        poolInfo.push(xWinLib.PoolInfo({
-            lpToken: _lpToken,
-            rewardperblock : _rewardperblock,
-            multiplier : _multiplier
-        }));
+    function add(
+        address _lpToken,
+        uint256 _rewardperblock,
+        uint256 _multiplier
+    ) public onlyOwner onlyNonEmergency {
+        poolInfo.push(
+            xWinLib.PoolInfo({
+                lpToken: _lpToken,
+                rewardperblock: _rewardperblock,
+                multiplier: _multiplier
+            })
+        );
     }
-    
+
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw(uint256 _pid) public onlyEmergency {
-        
         xWinLib.PoolInfo memory pool = poolInfo[_pid];
         xWinLib.UserInfo storage user = userInfo[_pid][msg.sender];
         TransferHelper.safeTransfer(pool.lpToken, msg.sender, user.amount);
         user.amount = 0;
         user.blockstart = 0;
     }
-    
+
     /// @dev reward per block by deployer
     function updateRewardPerBlock(uint256 _rewardperblock) external onlyOwner {
         rewardperuint = _rewardperblock;
     }
-    
+
     /// @dev turn on emerrgency state by deployer
     function updateEmergencyState(bool _state) external onlyOwner {
         emergencyOn = _state;
     }
-    
+
     /// @dev update xwin defi protocol
-    function updateProtocol(address _fundaddress, address _newProtocol) external onlyOwner {
+    function updateProtocol(
+        address _fundaddress,
+        address _newProtocol
+    ) external onlyOwner {
         xWinFund _xWinFund = xWinFund(_fundaddress);
         _xWinFund.updateProtocol(_newProtocol);
     }
-    
-     /// @dev create or update farm pool fee by deployer
-    function updateFarmPoolInfo(uint256 _pid, uint256 _rewardperblock, uint256 _multiplier) external onlyOwner {
-        
+
+    /// @dev create or update farm pool fee by deployer
+    function updateFarmPoolInfo(
+        uint256 _pid,
+        uint256 _rewardperblock,
+        uint256 _multiplier
+    ) external onlyOwner {
         xWinLib.PoolInfo storage pool = poolInfo[_pid];
-        if(pool.lpToken != address(0)){
+        if (pool.lpToken != address(0)) {
             pool.rewardperblock = _rewardperblock;
             pool.multiplier = _multiplier;
         }
     }
-    
+
     /// @dev View function to see all pending xWin token earn on frontend.
     function getAllPendingXwin(address _user) public view returns (uint256) {
-        
         uint256 length = poolInfo.length;
         uint256 total = 0;
         for (uint256 pid = 0; pid < length; ++pid) {
@@ -997,21 +1123,31 @@ contract xWinDefiProtocol is Ownable, ReentrancyGuard {
         }
         return total;
     }
-    
+
     /// @dev View function to see pending xWin on frontend.
-    function pendingXwin(uint256 _pid, address _user) public view returns (uint256) {
-        
-        if(rewardRemaining == 0) return 0;
+    function pendingXwin(
+        uint256 _pid,
+        address _user
+    ) public view returns (uint256) {
+        if (rewardRemaining == 0) return 0;
         xWinLib.PoolInfo memory pool = poolInfo[_pid];
         xWinLib.UserInfo memory user = userInfo[_pid][_user];
         uint blockdiff = block.number.sub(user.blockstart);
-        uint256 currentRealizedQty = pool.multiplier.mul(pool.rewardperblock).mul(blockdiff).mul(user.amount).div(1e18).div(100);
+        uint256 currentRealizedQty = pool
+            .multiplier
+            .mul(pool.rewardperblock)
+            .mul(blockdiff)
+            .mul(user.amount)
+            .div(1e18)
+            .div(100);
         return currentRealizedQty;
     }
-    
-    /// @dev Deposit LP tokens to xWin Protocol for xWin allocation.
-    function DepositFarm(uint256 _pid, uint256 _amount) public nonReentrant onlyNonEmergency {
 
+    /// @dev Deposit LP tokens to xWin Protocol for xWin allocation.
+    function DepositFarm(
+        uint256 _pid,
+        uint256 _amount
+    ) public nonReentrant onlyNonEmergency {
         xWinLib.PoolInfo memory pool = poolInfo[_pid];
         require(pool.lpToken != address(0), "No pool found");
         xWinLib.UserInfo storage user = userInfo[_pid][msg.sender];
@@ -1020,326 +1156,460 @@ contract xWinDefiProtocol is Ownable, ReentrancyGuard {
             _sendRewards(msg.sender, pending);
         }
         if (_amount > 0) {
-            TransferHelper.safeTransferFrom(pool.lpToken, msg.sender, address(this), _amount);
+            TransferHelper.safeTransferFrom(
+                pool.lpToken,
+                msg.sender,
+                address(this),
+                _amount
+            );
             user.amount = user.amount.add(_amount);
         }
         user.blockstart = block.number;
         emit _DepositFarm(msg.sender, _pid, _amount);
     }
-    
-    /// @dev Withdraw LP tokens from xWin Protocol.
-    function WithdrawFarm(uint256 _pid, uint256 _amount) public nonReentrant onlyNonEmergency {
 
+    /// @dev Withdraw LP tokens from xWin Protocol.
+    function WithdrawFarm(
+        uint256 _pid,
+        uint256 _amount
+    ) public nonReentrant onlyNonEmergency {
         xWinLib.PoolInfo memory pool = poolInfo[_pid];
         xWinLib.UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
 
         uint256 pending = pendingXwin(_pid, msg.sender);
-        if(pending > 0) _sendRewards(msg.sender, pending);
-        
-        if(_amount > 0) {
+        if (pending > 0) _sendRewards(msg.sender, pending);
+
+        if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             TransferHelper.safeTransfer(pool.lpToken, msg.sender, _amount);
         }
         user.blockstart = block.number;
         emit _WithdrawFarm(msg.sender, _pid, _amount);
     }
-    
-   
-    /// @dev perform subscription based on ratio setup and put into lending if available 
-    function Subscribe(xWinLib.TradeParams memory _tradeParams) public nonReentrant onlyNonEmergency payable {
-        
+
+    /// @dev perform subscription based on ratio setup and put into lending if available
+    function Subscribe(
+        xWinLib.TradeParams memory _tradeParams
+    ) public payable nonReentrant onlyNonEmergency {
         require(isxwinFund[_tradeParams.xFundAddress] == true, "not xwin fund");
         xWinLib.xWinReferral memory _xWinReferral = xWinReferral[msg.sender];
-        require(msg.sender != _tradeParams.referral, "referal cannot be own address");
-        
-        if(_xWinReferral.referral != address(0)){
-            require(_xWinReferral.referral == _tradeParams.referral, "already had referral");
+        require(
+            msg.sender != _tradeParams.referral,
+            "referal cannot be own address"
+        );
+
+        if (_xWinReferral.referral != address(0)) {
+            require(
+                _xWinReferral.referral == _tradeParams.referral,
+                "already had referral"
+            );
         }
         xWinFund _xWinFund = xWinFund(_tradeParams.xFundAddress);
-        TransferHelper.safeTransferBNB(_tradeParams.xFundAddress, _tradeParams.amount);
+        TransferHelper.safeTransferBNB(
+            _tradeParams.xFundAddress,
+            _tradeParams.amount
+        );
         uint256 mintQty = _xWinFund.Subscribe(_tradeParams, msg.sender);
-        
-        if(rewardRemaining > 0){
+
+        if (rewardRemaining > 0) {
             _storeRewardQty(msg.sender, _tradeParams.amount, mintQty);
             _updateReferralReward(_tradeParams, _xWinFund.getWhoIsManager());
         }
-        emit _Subscribe(msg.sender, _tradeParams.xFundAddress, _tradeParams.amount, mintQty);
+        emit _Subscribe(
+            msg.sender,
+            _tradeParams.xFundAddress,
+            _tradeParams.amount,
+            mintQty
+        );
     }
-    
+
     /// @dev perform redemption based on unit redeem
-    function Redeem(xWinLib.TradeParams memory _tradeParams) external nonReentrant onlyNonEmergency payable {
-        
-        require(IBEP20(_tradeParams.xFundAddress).balanceOf(msg.sender) >= _tradeParams.amount, "Not enough balance to redeem");
+    function Redeem(
+        xWinLib.TradeParams memory _tradeParams
+    ) external payable nonReentrant onlyNonEmergency {
+        require(
+            IBEP20(_tradeParams.xFundAddress).balanceOf(msg.sender) >=
+                _tradeParams.amount,
+            "Not enough balance to redeem"
+        );
         require(isxwinFund[_tradeParams.xFundAddress] == true, "not xwin fund");
-        TransferHelper.safeTransferFrom(_tradeParams.xFundAddress, msg.sender, address(this), _tradeParams.amount);
+        TransferHelper.safeTransferFrom(
+            _tradeParams.xFundAddress,
+            msg.sender,
+            address(this),
+            _tradeParams.amount
+        );
         xWinFund _xWinFund = xWinFund(_tradeParams.xFundAddress);
         uint256 redeemratio = _xWinFund.Redeem(_tradeParams, msg.sender);
         uint256 rewardQty = _updateRewardBal(msg.sender, _tradeParams.amount);
-        emit _Redeem(msg.sender, _tradeParams.xFundAddress, _tradeParams.amount, rewardQty, redeemratio);
+        emit _Redeem(
+            msg.sender,
+            _tradeParams.xFundAddress,
+            _tradeParams.amount,
+            rewardQty,
+            redeemratio
+        );
     }
-    
+
     /// @dev perform redemption based on unit redeem and give up all xwin rewards
-    function emergencyRedeem(uint256 _redeemAmount, address _fundaddress) external nonReentrant onlyEmergency payable {
-        
-        require(IBEP20(_fundaddress).balanceOf(msg.sender) >= _redeemAmount, "Not enough balance to redeem");
-        TransferHelper.safeTransferFrom(_fundaddress, msg.sender, address(this), _redeemAmount);
+    function emergencyRedeem(
+        uint256 _redeemAmount,
+        address _fundaddress
+    ) external payable nonReentrant onlyEmergency {
+        require(
+            IBEP20(_fundaddress).balanceOf(msg.sender) >= _redeemAmount,
+            "Not enough balance to redeem"
+        );
+        TransferHelper.safeTransferFrom(
+            _fundaddress,
+            msg.sender,
+            address(this),
+            _redeemAmount
+        );
         xWinFund _xWinFund = xWinFund(_fundaddress);
         _xWinFund.emergencyRedeem(_redeemAmount, msg.sender);
         _resetRewards(msg.sender);
         emit _EmergencyRedeem(msg.sender, _fundaddress, _redeemAmount);
     }
-    
+
     /// @dev manager perform remove from farm for emergency state
-    function emergencyRemoveFromFarm(address _fundaddress) external nonReentrant onlyEmergency payable {
-        
+    function emergencyRemoveFromFarm(
+        address _fundaddress
+    ) external payable nonReentrant onlyEmergency {
         xWinFund _xWinFund = xWinFund(_fundaddress);
-        require(msg.sender == _xWinFund.getWhoIsManager(), "not the manager to move from farm");
+        require(
+            msg.sender == _xWinFund.getWhoIsManager(),
+            "not the manager to move from farm"
+        );
         _xWinFund.emergencyRemoveFromFarm();
     }
-    
+
     /// @dev perform MoveNonIndexNameTo BNB for non benchmark name
     function MoveNonIndexNameToBase(
         address xFundAddress,
         address _tokenaddress,
         uint256 deadline,
         uint256 priceImpactTolerance
-        ) external nonReentrant payable {
-        
+    ) external payable nonReentrant {
         xWinFund _xWinFund = xWinFund(xFundAddress);
-        require(msg.sender == _xWinFund.getWhoIsManager(), "not the manager to move the balance");
-         (uint256 balanceToken, uint256 swapOutput) = _xWinFund.MoveNonIndexNameToBase(_tokenaddress, deadline, priceImpactTolerance);
-        emit _MoveNonIndexNameToBaseEvent(msg.sender, xFundAddress, _tokenaddress, balanceToken, swapOutput);
+        require(
+            msg.sender == _xWinFund.getWhoIsManager(),
+            "not the manager to move the balance"
+        );
+        (uint256 balanceToken, uint256 swapOutput) = _xWinFund
+            .MoveNonIndexNameToBase(
+                _tokenaddress,
+                deadline,
+                priceImpactTolerance
+            );
+        emit _MoveNonIndexNameToBaseEvent(
+            msg.sender,
+            xFundAddress,
+            _tokenaddress,
+            balanceToken,
+            swapOutput
+        );
     }
-    
+
     /// @dev create target ratio by portfolio manager
     function CreateTarget(
-        address[] calldata _toAddresses, 
+        address[] calldata _toAddresses,
         uint256[] calldata _targetWeight,
-        address xFundAddress 
-        ) external nonReentrant onlyNonEmergency {
-        
+        address xFundAddress
+    ) external nonReentrant onlyNonEmergency {
         xWinFund _xWinFund = xWinFund(xFundAddress);
-        require(msg.sender == _xWinFund.getWhoIsManager(), "only owner of the fund is allowed");
+        require(
+            msg.sender == _xWinFund.getWhoIsManager(),
+            "only owner of the fund is allowed"
+        );
         _xWinFund.CreateTargetNames(_toAddresses, _targetWeight);
-        emit _CreateTarget(msg.sender, xFundAddress, _toAddresses, _targetWeight, block.timestamp);
+        emit _CreateTarget(
+            msg.sender,
+            xFundAddress,
+            _toAddresses,
+            _targetWeight,
+            block.timestamp
+        );
     }
-    
+
     /// @dev perform update target, move non-bm to base and finally rebalance
     function RebalanceAllInOne(
         xWinLib.TradeParams memory _tradeParams,
-        address[] calldata _toAddresses, 
+        address[] calldata _toAddresses,
         uint256[] calldata _targetWeight
-        ) external nonReentrant onlyNonEmergency payable {
-        
+    ) external payable nonReentrant onlyNonEmergency {
         xWinFund _xWinFund = xWinFund(_tradeParams.xFundAddress);
-        require(msg.sender == _xWinFund.getWhoIsManager(), "only owner of the fund is allowed");
-        
-        uint256 baseccyBal = _xWinFund.Rebalance(_toAddresses, _targetWeight, _tradeParams.deadline, _tradeParams.priceImpactTolerance);
-        emit _RebalanceAllInOne(msg.sender, _tradeParams.xFundAddress, baseccyBal, block.timestamp);
+        require(
+            msg.sender == _xWinFund.getWhoIsManager(),
+            "only owner of the fund is allowed"
+        );
+
+        uint256 baseccyBal = _xWinFund.Rebalance(
+            _toAddresses,
+            _targetWeight,
+            _tradeParams.deadline,
+            _tradeParams.priceImpactTolerance
+        );
+        emit _RebalanceAllInOne(
+            msg.sender,
+            _tradeParams.xFundAddress,
+            baseccyBal,
+            block.timestamp
+        );
     }
-    
+
     /// @dev update platform fee by deployer
     function updatePlatformFee(uint256 newPlatformFee) external onlyOwner {
         platformFeeBps = newPlatformFee;
     }
-    
+
     /// @dev get platform fee
-    function getPlatformFee() view external returns (uint256) {
+    function getPlatformFee() external view returns (uint256) {
         return platformFeeBps;
     }
-    
+
     /// @dev get platform wallet address
-    function getPlatformAddress() view external returns (address) {
+    function getPlatformAddress() external view returns (address) {
         return platformWallet;
     }
-    
+
     /// @dev get platform wallet address
-    function gexWinBenefitPool() view external returns (address) {
+    function gexWinBenefitPool() external view returns (address) {
         return xwinBenefitPool;
     }
-    
+
     /// @dev update platform fee by deployer
-    function updateXwinBenefitPool(address _xwinBenefitPool) external onlyOwner {
+    function updateXwinBenefitPool(
+        address _xwinBenefitPool
+    ) external onlyOwner {
         xwinBenefitPool = _xwinBenefitPool;
     }
-    
+
     /// @dev update rewardRemaining by deployer
     function updateRewardRemaining(uint256 _newRemaining) external onlyOwner {
         rewardRemaining = _newRemaining;
     }
-    
+
     /// @dev update platform fee by deployer
     function updateStakeProtocol(address newStakeProtocol) external onlyOwner {
         stakeAddress = newStakeProtocol;
     }
-    
+
     /// @dev update referal fee by deployer
-    function updateReferralRewardPerUnit(uint256 _referralperunit) external onlyOwner {
+    function updateReferralRewardPerUnit(
+        uint256 _referralperunit
+    ) external onlyOwner {
         referralperunit = _referralperunit;
     }
 
     /// @dev update manager reward by deployer
-    function updateManagerRewardPerUnit(uint256 _managerRewardperunit) external onlyOwner {
+    function updateManagerRewardPerUnit(
+        uint256 _managerRewardperunit
+    ) external onlyOwner {
         managerRewardperunit = _managerRewardperunit;
     }
-    
+
     function _multiplier(uint256 _blockstart) internal view returns (uint256) {
-        
-        if(_blockstart == 0) return 0;
-        uint256 blockdiff = _blockstart.sub(startblock); 
-        if(blockdiff < 5256000) return 50000; //first 6 months, 5x
-        if(blockdiff >= 5256000 && blockdiff <= 10512000) return 25000; //then following 6 months 
-        if(blockdiff >= 10512000 && blockdiff <= 15768000) return 12500; //then following 6 months
-        if(blockdiff > 15768000) return 10000;
+        if (_blockstart == 0) return 0;
+        uint256 blockdiff = _blockstart.sub(startblock);
+        if (blockdiff < 5256000) return 50000; //first 6 months, 5x
+        if (blockdiff >= 5256000 && blockdiff <= 10512000) return 25000; //then following 6 months
+        if (blockdiff >= 10512000 && blockdiff <= 15768000) return 12500; //then following 6 months
+        if (blockdiff > 15768000) return 10000;
     }
-    
+
     /// @dev get estimated reward of XWN token
-    function GetEstimateReward(address fromAddress) public view returns (uint256) {
-        
-        xWinLib.xWinReward memory _xwinReward =  xWinRewards[fromAddress];
-        if(_xwinReward.blockstart == 0) return 0;
+    function GetEstimateReward(
+        address fromAddress
+    ) public view returns (uint256) {
+        xWinLib.xWinReward memory _xwinReward = xWinRewards[fromAddress];
+        if (_xwinReward.blockstart == 0) return 0;
         uint blockdiff = block.number.sub(_xwinReward.blockstart);
-        uint256 currentRealizedQty = _multiplier(_xwinReward.blockstart).mul(rewardperuint).mul(blockdiff).mul(_xwinReward.accBasetoken).div(1e18).div(10000); 
-        uint256 allRealizedQty = currentRealizedQty.add(_xwinReward.previousRealizedQty);
-        return  (rewardRemaining >= allRealizedQty) ? allRealizedQty: rewardRemaining;
+        uint256 currentRealizedQty = _multiplier(_xwinReward.blockstart)
+            .mul(rewardperuint)
+            .mul(blockdiff)
+            .mul(_xwinReward.accBasetoken)
+            .div(1e18)
+            .div(10000);
+        uint256 allRealizedQty = currentRealizedQty.add(
+            _xwinReward.previousRealizedQty
+        );
+        return
+            (rewardRemaining >= allRealizedQty)
+                ? allRealizedQty
+                : rewardRemaining;
     }
-    
+
     function GetQuotes(
         uint tokenBal,
         address targetToken
-        ) external view returns (uint amountB, uint amountA) {
+    ) external view returns (uint amountB, uint amountA) {
         xWinStake _xWinStake = xWinStake(stakeAddress);
-        (amountB, amountA, ) = _xWinStake.GetQuotes(tokenBal, 1e18, targetToken);
+        (amountB, amountA, ) = _xWinStake.GetQuotes(
+            tokenBal,
+            1e18,
+            targetToken
+        );
         return (amountB, amountA);
-    }   
-    
+    }
+
     /// @dev User to claim the reward and stake them into DEX
     function StakeMyReward(
-        uint256 deadline 
-        ) external nonReentrant onlyNonEmergency payable {
-        
+        uint256 deadline
+    ) external payable nonReentrant onlyNonEmergency {
         //only token owner are allowed
-        xWinLib.xWinReward storage _xwinReward =  xWinRewards[msg.sender];
+        xWinLib.xWinReward storage _xwinReward = xWinRewards[msg.sender];
         uint256 rewardQty = GetEstimateReward(msg.sender);
         require(rewardQty > 0, "No reward to claim");
-        
+
         _xwinReward.previousRealizedQty = 0;
         _xwinReward.blockstart = block.number;
-        
+
         xWinStake _xWinStake = xWinStake(stakeAddress);
-        TransferHelper.safeTransferBNB(stakeAddress, msg.value); 
-        
+        TransferHelper.safeTransferBNB(stakeAddress, msg.value);
+
         _sendRewards(stakeAddress, rewardQty);
 
         _xWinStake.StakeReward(msg.sender, rewardQty, msg.value, deadline);
         emit _StakeMyReward(msg.sender, rewardQty);
     }
-    
-    function _updateReferralReward(xWinLib.TradeParams memory _tradeParams, address _managerAddress) internal {
-        
+
+    function _updateReferralReward(
+        xWinLib.TradeParams memory _tradeParams,
+        address _managerAddress
+    ) internal {
         xWinLib.xWinReferral storage _xWinReferral = xWinReferral[msg.sender];
-        if(_xWinReferral.referral == address(0)){
+        if (_xWinReferral.referral == address(0)) {
             _xWinReferral.referral = _tradeParams.referral; //store referal address
         }
-        xWinLib.xWinReward storage _xwinReward =  xWinRewards[_xWinReferral.referral];
-        
-        if(_xwinReward.accBasetoken > 0){
-            uint256 entitleAmt = _tradeParams.amount.mul(referralperunit).div(1e18);  //0.10
-            _xwinReward.previousRealizedQty = _xwinReward.previousRealizedQty.add(entitleAmt);
-        } 
+        xWinLib.xWinReward storage _xwinReward = xWinRewards[
+            _xWinReferral.referral
+        ];
 
-        xWinLib.xWinReward storage _xwinRewardManager =  xWinRewards[_managerAddress];
-        if(_xwinRewardManager.blockstart == 0){
+        if (_xwinReward.accBasetoken > 0) {
+            uint256 entitleAmt = _tradeParams.amount.mul(referralperunit).div(
+                1e18
+            ); //0.10
+            _xwinReward.previousRealizedQty = _xwinReward
+                .previousRealizedQty
+                .add(entitleAmt);
+        }
+
+        xWinLib.xWinReward storage _xwinRewardManager = xWinRewards[
+            _managerAddress
+        ];
+        if (_xwinRewardManager.blockstart == 0) {
             _xwinRewardManager.blockstart = block.number;
         }
-        uint256 entitleAmtManager = _tradeParams.amount.mul(managerRewardperunit).div(1e18); //manager get 0.05
-        _xwinRewardManager.previousRealizedQty = _xwinRewardManager.previousRealizedQty.add(entitleAmtManager);
+        uint256 entitleAmtManager = _tradeParams
+            .amount
+            .mul(managerRewardperunit)
+            .div(1e18); //manager get 0.05
+        _xwinRewardManager.previousRealizedQty = _xwinRewardManager
+            .previousRealizedQty
+            .add(entitleAmtManager);
     }
-    
+
     /// @dev withdraw reward of XWN token
-    function WithdrawReward() external nonReentrant onlyNonEmergency payable {
-        
-        xWinLib.xWinReward storage _xwinReward =  xWinRewards[msg.sender];
+    function WithdrawReward() external payable nonReentrant onlyNonEmergency {
+        xWinLib.xWinReward storage _xwinReward = xWinRewards[msg.sender];
         uint256 rewardQty = GetEstimateReward(msg.sender);
         require(rewardQty > 0, "No reward");
-        
+
         _xwinReward.previousRealizedQty = 0;
         _xwinReward.blockstart = block.number;
-        
-        uint amountWithdraw = (rewardRemaining >= rewardQty) ? rewardQty: rewardRemaining;
-        
-        if(amountWithdraw > 0) _sendRewards(msg.sender, amountWithdraw);
+
+        uint amountWithdraw = (rewardRemaining >= rewardQty)
+            ? rewardQty
+            : rewardRemaining;
+
+        if (amountWithdraw > 0) _sendRewards(msg.sender, amountWithdraw);
         emit _WithdrawReward(msg.sender, amountWithdraw);
     }
-    
-    function _storeRewardQty(address from, uint256 baseQty, uint256 mintQty) internal {
 
-        xWinLib.xWinReward storage _xwinReward =  xWinRewards[from];
-        if(_xwinReward.blockstart == 0){
+    function _storeRewardQty(
+        address from,
+        uint256 baseQty,
+        uint256 mintQty
+    ) internal {
+        xWinLib.xWinReward storage _xwinReward = xWinRewards[from];
+        if (_xwinReward.blockstart == 0) {
             _xwinReward.blockstart = block.number;
             _xwinReward.accBasetoken = baseQty;
             _xwinReward.accMinttoken = mintQty;
             _xwinReward.previousRealizedQty = 0;
-        }else{
-            
+        } else {
             uint blockdiff = block.number.sub(_xwinReward.blockstart);
-            uint256 currentRealizedQty = _multiplier(_xwinReward.blockstart).mul(rewardperuint).mul(blockdiff).mul(_xwinReward.accBasetoken).div(1e18).div(10000); 
+            uint256 currentRealizedQty = _multiplier(_xwinReward.blockstart)
+                .mul(rewardperuint)
+                .mul(blockdiff)
+                .mul(_xwinReward.accBasetoken)
+                .div(1e18)
+                .div(10000);
             _xwinReward.blockstart = block.number;
             _xwinReward.accBasetoken = baseQty.add(_xwinReward.accBasetoken);
             _xwinReward.accMinttoken = mintQty.add(_xwinReward.accMinttoken);
-            _xwinReward.previousRealizedQty = _xwinReward.previousRealizedQty.add(currentRealizedQty);
+            _xwinReward.previousRealizedQty = _xwinReward
+                .previousRealizedQty
+                .add(currentRealizedQty);
         }
     }
-    
-    function _updateRewardBal(address from, uint256 redeemUnit) internal returns (uint256 rewardQty){
 
-        if(rewardRemaining == 0) return 0;
-        xWinLib.xWinReward storage _xwinReward =  xWinRewards[from];
+    function _updateRewardBal(
+        address from,
+        uint256 redeemUnit
+    ) internal returns (uint256 rewardQty) {
+        if (rewardRemaining == 0) return 0;
+        xWinLib.xWinReward storage _xwinReward = xWinRewards[from];
         rewardQty = GetEstimateReward(from);
-        
-        if(_xwinReward.accMinttoken == 0) return 0;
-        if(rewardQty == 0) return 0;
-        
-        if(_xwinReward.accMinttoken >= redeemUnit){
+
+        if (_xwinReward.accMinttoken == 0) return 0;
+        if (rewardQty == 0) return 0;
+
+        if (_xwinReward.accMinttoken >= redeemUnit) {
             uint256 ratio = redeemUnit.mul(1e8).div(_xwinReward.accMinttoken);
             uint256 reducedBal = _xwinReward.accBasetoken.mul(ratio).div(1e8);
-            _xwinReward.accBasetoken = _xwinReward.accBasetoken.sub(reducedBal);    
+            _xwinReward.accBasetoken = _xwinReward.accBasetoken.sub(reducedBal);
             _xwinReward.accMinttoken = _xwinReward.accMinttoken.sub(redeemUnit);
-        }else{
+        } else {
             _xwinReward.accMinttoken = 0;
             _xwinReward.accBasetoken = 0;
         }
         _xwinReward.previousRealizedQty = 0;
         _xwinReward.blockstart = block.number;
-        
+
         _sendRewards(msg.sender, rewardQty);
         return rewardQty;
     }
-    
+
     /// @dev emergency trf XWN token to new protocol
-    function ProtocolTransfer(address _newProtocol, uint256 amount) public onlyOwner onlyEmergency payable {
+    function ProtocolTransfer(
+        address _newProtocol,
+        uint256 amount
+    ) public payable onlyOwner onlyEmergency {
         TransferHelper.safeTransfer(xWinToken, _newProtocol, amount);
     }
-    
+
     function _sendRewards(address _to, uint256 amount) internal {
-        
-        if(rewardRemaining == 0) return;
+        if (rewardRemaining == 0) return;
         uint256 xwinTokenBal = IBEP20(xWinToken).balanceOf(address(this));
-        if(xwinTokenBal == 0) return;
-        
-        if(rewardRemaining >= amount && xwinTokenBal >= amount){
+        if (xwinTokenBal == 0) return;
+
+        if (rewardRemaining >= amount && xwinTokenBal >= amount) {
             TransferHelper.safeTransfer(xWinToken, _to, amount);
             rewardRemaining = rewardRemaining.sub(amount);
-        }else{
-            uint amountTosend = (xwinTokenBal >= amount) ? amount: xwinTokenBal;
+        } else {
+            uint amountTosend = (xwinTokenBal >= amount)
+                ? amount
+                : xwinTokenBal;
             TransferHelper.safeTransfer(xWinToken, _to, amountTosend);
             rewardRemaining = 0; //mark reward ended
         }
     }
-    
+
     function _resetRewards(address _from) internal {
-        xWinLib.xWinReward storage _xwinReward =  xWinRewards[_from];
+        xWinLib.xWinReward storage _xwinReward = xWinRewards[_from];
         _xwinReward.accMinttoken = 0;
         _xwinReward.accBasetoken = 0;
         _xwinReward.previousRealizedQty = 0;
