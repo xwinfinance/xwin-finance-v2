@@ -84,10 +84,10 @@ contract xWinLockedStake is
         masterChef.deposit(lockpid, 1 ether);
     }
 
-    /**
-     * @notice Deposits funds into the Cake Vault
-     * @param _amount: number of tokens to deposit (in CAKE)
-     */
+    /// @notice Deposit into locked staking farm
+    /// @notice If locked position already exists, this function acts to deposit more and extend locking period
+    /// @param _amount Amount of xWin Tokens to deposit
+    /// @param _duration Duration to lock
     function deposit(uint256 _amount, uint8 _duration) external nonReentrant {
         require(_amount > 0, "Nothing to deposit");
         require(_duration > 0 && _duration <= 52, "invalid duration");
@@ -163,6 +163,7 @@ contract xWinLockedStake is
         emit Deposit(msg.sender, _amount, currentShares);
     }
 
+    /// To re-invest rewards for compounding rewards
     function harvest() public nonReentrant {
         _harvest();
     }
@@ -182,8 +183,7 @@ contract xWinLockedStake is
     }
 
     /**
-     * @notice Reinvests CAKE tokens into MasterChef
-     * @dev Only possible when contract not paused.
+     * @notice Collect locking bonus
      */
     function harvestLockBonus() internal {
         if (totalLockedShares == 0) return;
@@ -193,7 +193,7 @@ contract xWinLockedStake is
     }
 
     /**
-     * @notice Withdraws from funds from the Cake Vault
+     * @notice Withdraws everything from user
      */
     function withdraw() external nonReentrant {
         UserInfo memory user = userInfo[msg.sender];
@@ -213,7 +213,7 @@ contract xWinLockedStake is
     }
 
     /**
-     * @notice Deposits tokens into MasterChef to earn staking rewards
+     * @notice Reinvest reward tokens into MasterChef to compound staking rewards
      */
     function _earn() internal {
         uint256 bal = available();

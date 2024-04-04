@@ -123,11 +123,6 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
         stopLossPrice = _rate - ((_rate * stopLossPerc) / 10000);
     }
 
-    /**
-     * @notice Deposits funds into the Cake Vault
-     * @dev Only possible when contract not paused.
-     * @param _amount: number of tokens to deposit (in CAKE)
-     */
     function deposit(
         uint256 _amount
     ) external override nonReentrant whenNotPaused returns (uint256) {

@@ -67,11 +67,6 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
         _;
     }
 
-    /**
-     * @notice Deposits funds into the Cake Vault
-     * @dev Only possible when contract not paused.
-     * @param _amount: number of tokens to deposit (in CAKE)
-     */
     function deposit(
         uint256 _amount
     ) external override nonReentrant whenNotPaused returns (uint256) {
@@ -146,7 +141,7 @@ contract xWinERC20Alpha is xWinStrategyWithFee {
     }
 
     /**
-     * @notice Deposits funds into the Cake Vault
+     * @notice Swaps interest received from baseTokenStaking into target token
      * @dev Only possible when contract not paused.
      */
     function systemDeposit() external onlyExecutor nonReentrant {

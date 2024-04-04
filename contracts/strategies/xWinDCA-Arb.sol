@@ -67,11 +67,6 @@ contract xWinDCAArb is xWinStrategyWithFee {
         _;
     }
 
-    /**
-     * @notice Deposits funds
-     * @dev Only possible when contract is authorized.
-     * @param _amount: number of tokens to deposit in USDT
-     */
     function deposit(
         uint256 _amount
     ) external override nonReentrant whenNotPaused returns (uint256) {
@@ -151,7 +146,7 @@ contract xWinDCAArb is xWinStrategyWithFee {
     }
 
     /**
-     * @notice Deposits funds into the Cake Vault
+     * @notice Swaps base token into target token, porportionally over
      * @dev Only possible when contract not paused.
      */
     function systemDeposit() external onlyExecutor nonReentrant returns (uint) {

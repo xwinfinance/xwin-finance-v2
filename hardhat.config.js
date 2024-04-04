@@ -1,5 +1,6 @@
 require("@openzeppelin/hardhat-upgrades");
 require("@nomicfoundation/hardhat-toolbox");
+require("solidity-docgen");
 
 const { privateKey } = require("./secrets.json");
 const { getForkingConfig } = require("./fork.configs");
@@ -84,5 +85,9 @@ module.exports = {
     enabled: false,
     currency: "ETH",
     gasPrice: 0.1,
+  },
+  docgen: {
+    pages: 'files',
+    dev: true
   }
 };

@@ -95,6 +95,11 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         executors[msg.sender] = true;
     }
 
+    /// @notice Create a Fund
+    /// @param name Name of new fund
+    /// @param symbol Symbol of new fund
+    /// @param _toAddresses Array of initial target allocation addresses
+    /// @param _targetWeight Array of inital target allocation weights
     function createFundPrivate(
         string memory name,
         string memory symbol,
@@ -143,6 +148,12 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         emit FundCreation(msg.sender, fundAddr, fundId, name, symbol);
     }
 
+    /// @notice Create a Fund, with specific base token
+    /// @param name Name of new fund
+    /// @param symbol Symbol of new fund
+    /// @param _baseToken base token for new fund
+    /// @param _toAddresses Array of initial target allocation addresses
+    /// @param _targetWeight Array of inital target allocation weights
     function createFundPrivateWithBaseToken(
         string memory name,
         string memory symbol,
@@ -575,7 +586,8 @@ contract FundV2Factory is Initializable, OwnableUpgradeable {
         return count;
     }
 
-    /// TODO : Get the balance of the user, not from performance collection
+    /// Gets the total deposit value of the given address in all FundV2 contracts
+    /// @param _user Wallet to query
     function countTotalTVLByAddress(
         address _user
     ) external view returns (uint256 amount) {
