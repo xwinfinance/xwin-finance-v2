@@ -371,9 +371,6 @@ contract xWinMasterChef is
         user.rewardDebt = 0;
         pool.totalDeposit -= amount;
         pool.lpToken.safeTransfer(address(msg.sender), amount);
-        // if (_pid == 0) {
-        //     syrup.burn(msg.sender, amount);
-        // }
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
@@ -395,7 +392,7 @@ contract xWinMasterChef is
         usdtToken = _newUSDToken;
     }
 
-    /// TODO : Get the APR for the pool
+    /// @notice Returns the APR for a given pool
     function getAPR(uint _pid) external view returns (uint256 apr) {
         PoolInfo memory pool = poolInfo[_pid];
         uint lpBal = pool.totalDeposit;
@@ -414,6 +411,7 @@ contract xWinMasterChef is
         return (proceeds * 10000 * 100) / tokenPrice;
     }
 
+    /// @notice View the reward per block for a given pool and user
     function getPoolUserRewardPerBlock(
         uint _pid,
         address _user

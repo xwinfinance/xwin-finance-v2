@@ -163,7 +163,7 @@ contract xWinLockedStake is
         emit Deposit(msg.sender, _amount, currentShares);
     }
 
-    /// To re-invest rewards for compounding rewards
+    /// @notice Re-invest rewards for compounding rewards
     function harvest() public nonReentrant {
         _harvest();
     }
@@ -306,10 +306,7 @@ contract xWinLockedStake is
         return amount;
     }
 
-    /**
-     * @notice Calculate user withdraw rewards
-     * @return Returns total pending cake rewards
-     */
+    /// @notice withdraws the user's entire position from both lock bonus and staking
     function _doWithdraw(UserInfo memory user) internal returns (uint256) {
         // auto XWIN portion
         uint256 currentAmount = (totalXWINBalance() * user.shares) /
@@ -372,6 +369,10 @@ contract xWinLockedStake is
         return (amount * (period + 50)) / 51;
     }
 
+    /// @notice Views a user's current position
+    /// @param _user Address of user
+    /// @return rewardAmount xWin Token amount from locking reward
+    /// @return xwinAmount xWin Tokens amount from staking
     function getUserPosition(
         address _user
     ) public view returns (uint256 rewardAmount, uint256 xwinAmount) {
@@ -397,6 +398,11 @@ contract xWinLockedStake is
         return w * 1 weeks;
     }
 
+    /// @notice Calculates the amount discount to award, based on the amount of Tokens locked (max 50,000) and the duration (max 1 year),
+    /// @param amount Amount of xWin Tokens
+    /// @param startTimestamp start duration
+    /// @param endTimeStamp end duration
+    /// @return favor Discount amount from 0-50%, 0-5000
     function calculateFavor(
         uint256 amount,
         uint256 startTimestamp,
@@ -414,6 +420,7 @@ contract xWinLockedStake is
         }
     }
 
+    /// @notice Returns user's daily reward rate
     function getUserCompoundAPYrate(
         address _user
     ) external view returns (uint256 estimatedDailyRate) {
@@ -431,6 +438,7 @@ contract xWinLockedStake is
         // calculate in frontend (1 + (estimatedDailyRate / 1e18)) ** 365 - 1
     }
 
+    /// Gets the user's rate from lock duration bonus
     function getUserLockingBonusAPR(
         address _user
     ) external view returns (uint256 apr) {
@@ -448,6 +456,9 @@ contract xWinLockedStake is
         apr = (estimatedReward * 10000) / totalLockedShares / user.amount;
     }
 
+    /// @notice Given an amount and duration, return the user's rate and bonus rate
+    /// @param _amount Amount to be deposited
+    /// @param _duration Duration to be locked
     function getEstimatedDepositAPY(
         uint256 _amount,
         uint8 _duration

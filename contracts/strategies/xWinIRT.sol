@@ -331,10 +331,6 @@ contract xWinIRT is xWinStrategyWithFee, KeeperCompatibleInterface {
             );
     }
 
-    /**
-     * @notice Withdraws from funds from the Cake Vault
-     * @param _shares: Number of shares to withdraw
-     */
     function withdraw(
         uint256 _shares
     ) external override nonReentrant whenNotPaused returns (uint256) {
