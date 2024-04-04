@@ -106,6 +106,11 @@ npx hardhat test
 
 To modify the local fork chainId or blocknumber, go to [fork.configs.js](fork.configs.js).
 
+If you want to generate Solidity API documentation, run the following command:
+```bash
+npx hardhat docgen
+```
+
 ## Authors
 
 xWIN Technology 
