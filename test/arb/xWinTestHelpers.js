@@ -15,10 +15,10 @@ const swapBNB = async (ethAmount, to, receiverAddress) => {
     arb.uniswapV3Router
   );
 
-  await WETH.deposit({ value: ethers.utils.parseEther(ethAmount) });
+  await WETH.deposit({ value: ethers.parseEther(ethAmount) });
   await WETHERC.approve(
     arb.uniswapV3Router,
-    ethers.utils.parseEther(ethAmount)
+    ethers.parseEther(ethAmount)
   );
 
   const currentBlock = (await ethers.provider.getBlock()).timestamp;
@@ -28,7 +28,7 @@ const swapBNB = async (ethAmount, to, receiverAddress) => {
     fee: 500,
     recipient: receiverAddress,
     deadline: currentBlock + 1000,
-    amountIn: ethers.utils.parseEther(ethAmount),
+    amountIn: ethers.parseEther(ethAmount),
     amountOutMinimum: 0,
     sqrtPriceLimitX96: 0,
   };
@@ -140,18 +140,6 @@ const deployxWinSwapV3 = async (signer) => {
 
   await xWinSwap.setExecutor(await signer.getAddress(), true);
 
-  // bsc.BTCB,
-  //     bsc.USDT,
-  //     bsc.pancakeSmartRouter,
-  //     [],
-  //     ethers.solidityPacked(
-  //       ["address", "uint24", "address", "uint24", "address"],
-  //       [bsc.BTCB, 2500, bsc.WBNB, 500, bsc.USDT]
-  //     ),
-  //     100,
-  //     0,
-  //     2
-
   // 2. Setup USDC-WBTC
   await xWinSwap
     .connect(signer)
@@ -164,7 +152,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.USDC, 500, arb.WETH, 500, arb.WBTC]
       ),
-      250,
+      350,
       0,
       2
     );
@@ -317,104 +305,41 @@ const deployxWinSingleAsset = async (
   xWinEmitEvent
 ) => {
   // 2. deploy xWinSingleAsset for WBTC
-  // let xWinSingleAssetFactory = await ethers.getContractFactory(
-  //   "xWinSingleAssetAave"
-  // );
-  let xWinSingleAssetFactory = await ethers.getContractFactory('xWinSingleAssetAave');
-    
-  // console.log(name, symbol, baseToken, stablecoinAddr)
+  let xWinSingleAssetFactory = await ethers.getContractFactory(
+    "xWinSingleAssetAave"
+  );
+
   let xWinSingleAsset = await upgrades.deployProxy(xWinSingleAssetFactory, [
     name,
     symbol,
     baseToken,
-    xWinSwap,
-    xWinPrice,
+    await xWinSwap.getAddress(),
+    await xWinPrice.getAddress(),
     stablecoinAddr,
     0,
     0,
-    0,
-    hardhatNode.publicAddress3
+    28800 * 90,
+    hardhatNode.publicAddress3,
   ]);
 
-  // let xWinSingleAsset = await upgrades.deployProxy(xWinSingleAssetFactory, [
-  //   name,
-  //   symbol,
-  //   baseToken,
-  //   xWinSwap,
-  //   xWinPrice,
-  //   stablecoinAddr,
-  //   100,
-  //   1000,
-  //   28800 * 90,
-  //   hardhatNode.publicAddress3,
-  // ]);
-  
-  console.log("here");
   await xWinSingleAsset.updateProperties(
     targetToken,
     pool,
     aavePoolDataProvider
   );
 
-  xWinEmitEvent.setExecutor(await xWinSingleAsset.getAddress(), true);
-	xWinSingleAsset.setEmitEvent(await xWinPrice); 
+  const addr = await xWinSingleAsset.getAddress();
+  // update emit event contract
+  xWinEmitEvent.setExecutor(addr, true);
+  xWinSingleAsset.setEmitEvent(await xWinEmitEvent.getAddress());
 
-  console.log(symbol, " proxy deployed to address:", xWinSingleAsset.address);
+  await xWinSwap.registerStrategyContract(addr, baseToken);
+  console.log(symbol, " proxy deployed to address:", addr);
 
+  await xWinSingleAsset.setExecutor(hardhatNode.publicAddress, true);
+  
   return xWinSingleAsset;
 };
-
-// const deployxWinSingleAsset = async (
-//   name,
-//   symbol,
-//   xWinSwap,
-//   lendingRewardToken,
-//   xWinPrice,
-//   baseToken,
-//   stablecoinAddr,
-//   xWinEmitEvent,
-//   managerFee = 0,
-//   performanceFee = 0
-// ) => {
-//   // 2. deploy xWinSingleAsset for BTCB
-//   let xWinSingleAssetFactory = await ethers.getContractFactory(
-//     "xWinSingleAssetAave"
-//   );
-
-//   let xWinSingleAsset = await upgrades.deployProxy(xWinSingleAssetFactory, [
-//     name,
-//     symbol,
-//     baseToken,
-//     stablecoinAddr,
-//     managerFee,
-//     performanceFee,
-//     28800 * 30,
-//     hardhatNode.publicAddress3,
-//   ]);
-//   await xWinSingleAsset.init(
-//     await xWinSwap.getAddress(),
-//     lendingRewardToken,
-//     await xWinPrice.getAddress()
-//   );
-
-//   await xWinSingleAsset.setExecutor(hardhatNode.publicAddress, true);
-//   console.log(
-//     symbol,
-//     " proxy deployed to address:",
-//     await xWinSingleAsset.getAddress()
-//   );
-
-//   // update emit event contract
-//   await xWinEmitEvent.setExecutor(xWinSingleAsset, true);
-//   await xWinSingleAsset.setEmitEvent(await xWinEmitEvent.getAddress());
-
-//   await xWinSwap.registerStrategyContract(
-//     await xWinSingleAsset.getAddress(),
-//     baseToken
-//   );
-
-//   return xWinSingleAsset;
-// };
 
 const deployxWinEmitEvent = async () => {
   let xWinEventFactory = await ethers.getContractFactory("xWinEmitEvent");
@@ -437,28 +362,35 @@ const deployxWinDCA = async (
   xWinPriceMaster,
   xWinEmitEvent
 ) => {
-  let xWinDCAFactory = await ethers.getContractFactory("xWinDCA");
+  let xWinDCAFactory = await ethers.getContractFactory("xWinDCAArb");
   const xWinDCA = await upgrades.deployProxy(xWinDCAFactory, [
     baseTokenAddr,
-    targetTokenAddr,
-    await xWinSwap.getAddress(),
-    await xWinPriceMaster.getAddress(),
-    baseStakingTokenAddr,
-    arb.USDT,
-    0,
-    0,
-    28800 * 30,
+    baseTokenAddr,
+    20,
+    1000,
+    28800 * 5,
     hardhatNode.publicAddress3,
+    "xDCA Btc",
+    "xDCA.btc",
   ]);
+  
   const xWinDCAAddr = await xWinDCA.getAddress();
-  console.log("xWinDollarCostAverage deployed to address:", xWinDCAAddr);
+  console.log("xWinDCA deployed to address:", xWinDCAAddr);
+  await xWinDCA.init(
+    targetTokenAddr, 
+    await xWinSwap.getAddress(), 
+    await baseStakingTokenAddr, 
+    await xWinPriceMaster.getAddress());
 
   // update emit event contract
   await xWinEmitEvent.setExecutor(xWinDCAAddr, true);
   await xWinDCA.setEmitEvent(await xWinEmitEvent.getAddress());
 
   await xWinDCA.setExecutor(hardhatNode.publicAddress, true);
-  await xWinSwap.registerStrategyContract(xWinDCAAddr, arb.USDT);
+  await xWinSwap.registerStrategyContract(xWinDCAAddr, arb.USDC);
+
+  await xWinDCA.updateProperties(ethers.parseEther("5000"), 90 * 28800, 28800);
+  console.log("xDCA updateProperties!")
 
   return xWinDCA;
 };

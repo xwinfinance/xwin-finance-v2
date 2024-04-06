@@ -8,9 +8,6 @@ const {
   deployxWinSingleAsset,
   swapBNB,
   deployFundV2Factory,
-  // deployxWinDefi,
-  // deployxWinMasterChef,
-  // deployLockStaking,
 } = require("./xWinTestHelpers.js");
 const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
@@ -31,11 +28,6 @@ async function xWinFixture() {
 
   const xWinEmitEvent = await deployxWinEmitEvent();
 
-  // // deploy farming/staking contracts
-  // const xWinDefi = await deployxWinDefi(owner);
-  // const xWinMasterChef = await deployxWinMasterChef(xWinDefi, xWinPriceMaster);
-  // const xWinLockStaking = await deployLockStaking(owner, xWinMasterChef);
-
   // deploy factory contract
   const xWinFundV2Factory = await deployFundV2Factory(
     xWinSwapV3,
@@ -51,8 +43,8 @@ async function xWinFixture() {
     "xUSDC Derivative",
     "xUSDC",
     arb.USDC,
-    await xWinSwapV3.getAddress(),
-    await xWinPriceMaster.getAddress(),
+    xWinSwapV3,
+    xWinPriceMaster,
     arb.USDC,
     arb.aUSDC,
     arb.aavePool,
@@ -65,8 +57,8 @@ async function xWinFixture() {
     "xUSDT Derivative",
     "xUSDT",
     arb.USDT,
-    await xWinSwapV3.getAddress(),
-    await xWinPriceMaster.getAddress(),
+    xWinSwapV3,
+    xWinPriceMaster,
     arb.USDC,
     arb.aUSDT,
     arb.aavePool,
@@ -79,8 +71,8 @@ async function xWinFixture() {
     "xWBTC Derivative", 
     "xWBTC", 
     arb.WBTC, 
-    await xWinSwapV3.getAddress(),
-    await xWinPriceMaster.getAddress(),
+    xWinSwapV3,
+    xWinPriceMaster,
     arb.USDC, 
     arb.aWBTC, 
     arb.aavePool, 
@@ -88,102 +80,106 @@ async function xWinFixture() {
     xWinEmitEvent
   );
   
+  const xWinDCA = await deployxWinDCA(
+    arb.USDC,
+    await xUSDC.getAddress(),
+    await xWBTC.getAddress(),
+    xWinSwapV3,
+    xWinPriceMaster,
+    xWinEmitEvent
+  );
+  const xWinTokenAlpha = await deployxWinTokenAlpha(
+    arb.USDC,
+    await xUSDT.getAddress(),
+    await xWBTC.getAddress(),
+    "USDT-WBTC Alpha",
+    "UBA",
+    xWinSwapV3,
+    xWinPriceMaster,
+    xWinEmitEvent
+  );
 
-  // const xWinDCA = await deployxWinDCA(
-  //   arb.USDC,
-  //   await xUSDC.getAddress(),
-  //   await xWBTC.getAddress(),
-  //   xWinSwapV3,
-  //   xWinPriceMaster,
-  //   xWinEmitEvent
-  // );
-  // const xWinTokenAlpha = await deployxWinTokenAlpha(
-  //   arb.USDC,
-  //   await xUSDT.getAddress(),
-  //   await xWBTC.getAddress(),
-  //   "USDT-WBTC Alpha",
-  //   "UBA",
-  //   xWinSwapV3,
-  //   xWinPriceMaster,
-  //   xWinEmitEvent
-  // );
+  await xWinPriceMaster.addPrice(
+    await xWinTokenAlpha.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
+  await xWinPriceMaster.addPrice(
+    await xWBTC.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
+  await xWinPriceMaster.addPrice(
+    await xUSDT.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
+  await xWinPriceMaster.addPrice(
+    await xUSDC.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
+  await xWinPriceMaster.addPrice(
+    await xWinDCA.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
 
-  // await xWinPriceMaster.addPrice(
-  //   await xWinTokenAlpha.getAddress(),
-  //   arb.USDC,
-  //   3,
-  //   arb.address0
-  // );
-  // await xWinPriceMaster.addPrice(
-  //   await xWBTC.getAddress(),
-  //   arb.USDC,
-  //   3,
-  //   arb.address0
-  // );
-  // await xWinPriceMaster.addPrice(
-  //   await xUSDT.getAddress(),
-  //   arb.USDC,
-  //   3,
-  //   arb.address0
-  // );
-  // await xWinPriceMaster.addPrice(
-  //   await xWinDCA.getAddress(),
-  //   arb.USDC,
-  //   3,
-  //   arb.address0
-  // );
+  const fundV2Factory = await ethers.getContractFactory("FundV2");
+  await xWinFundV2Factory.createFund(
+    "Test Fund 1",
+    "TF1",
+    arb.USDC,
+    await accounts[1].getAddress(),
+    await owner.getAddress(),
+    arb.USDC
+  );
+  let fundIndex = await xWinFundV2Factory.getLatestFundID();
+  await xWinFundV2Factory.initialiseFund(
+    fundIndex,
+    100,
+    2000,
+    true,
+    100,
+    arb.PlatformAddress
+  );
+  let fundAddr = await xWinFundV2Factory.getFundfromIndex(fundIndex);
+  console.log(fundAddr, "fundV2Default1 created")
+  const fundV2Default1 = fundV2Factory.attach(fundAddr);
 
-  // const fundV2Factory = await ethers.getContractFactory("FundV2");
-  // await xWinFundV2Factory.createFund(
-  //   "Test Fund 1",
-  //   "TF1",
-  //   arb.USDT,
-  //   await accounts[1].getAddress(),
-  //   await owner.getAddress(),
-  //   arb.USDT
-  // );
-  // let fundIndex = await xWinFundV2Factory.getLatestFundID();
-  // await xWinFundV2Factory.initialiseFund(
-  //   fundIndex,
-  //   100,
-  //   2000,
-  //   true,
-  //   100,
-  //   arb.PlatformAddress
-  // );
-  // let fundAddr = await xWinFundV2Factory.getFundfromIndex(fundIndex);
+  await xWinFundV2Factory.createFund(
+    "Test Fund 2",
+    "TF2",
+    arb.USDC,
+    await accounts[1].getAddress(),
+    await owner.getAddress(),
+    arb.USDC
+  );
+  fundIndex = await xWinFundV2Factory.getLatestFundID();
+  await xWinFundV2Factory.initialiseFund(
+    fundIndex,
+    100,
+    2000,
+    true,
+    100,
+    arb.PlatformAddress
+  );
+  fundAddr = await xWinFundV2Factory.getFundfromIndex(fundIndex);
+  console.log(fundAddr, "fundV2Default2 created")
+  
+  const fundV2Default2 = fundV2Factory.attach(fundAddr);
 
-  // const fundV2Default1 = fundV2Factory.attach(fundAddr);
-
-  // await xWinFundV2Factory.createFund(
-  //   "Test Fund 2",
-  //   "TF2",
-  //   arb.USDT,
-  //   await accounts[1].getAddress(),
-  //   await owner.getAddress(),
-  //   arb.USDT
-  // );
-  // fundIndex = await xWinFundV2Factory.getLatestFundID();
-  // await xWinFundV2Factory.initialiseFund(
-  //   fundIndex,
-  //   100,
-  //   2000,
-  //   true,
-  //   100,
-  //   arb.PlatformAddress
-  // );
-  // fundAddr = await xWinFundV2Factory.getFundfromIndex(fundIndex);
-
-  // const fundV2Default2 = fundV2Factory.attach(fundAddr);
-
-  // await swapBNB("100", arb.USDT, await owner.getAddress());
-  // await swapBNB("50", arb.WBTC, await owner.getAddress());
-  // await swapBNB("50", arb.USDC, await owner.getAddress());
-  // // await swapBNB("50", arb.xWinToken, await owner.getAddress());
-  // await swapBNB("100", arb.USDT, await accounts[0].getAddress());
-  // await swapBNB("50", arb.WBTC, await accounts[0].getAddress());
-  // await swapBNB("50", arb.USDC, await accounts[0].getAddress());
-  // // await swapBNB("50", arb.xWinToken, await accounts[0].getAddress());
+  await swapBNB("100", arb.USDT, await owner.getAddress());
+  await swapBNB("500", arb.WBTC, await owner.getAddress());
+  await swapBNB("200", arb.USDC, await owner.getAddress());
+  await swapBNB("100", arb.USDT, await accounts[0].getAddress());
+  await swapBNB("500", arb.WBTC, await accounts[0].getAddress());
+  await swapBNB("200", arb.USDC, await accounts[0].getAddress());
 
   const USDT = await ethers.getContractAt(
     "contracts/Interface/IBEP20.sol:IBEP20",
@@ -205,8 +201,6 @@ async function xWinFixture() {
     xWinPriceMaster,
     xWinEmitEvent,
     xWinFundV2Factory,
-    xWinMasterChef,
-    xWinLockStaking,
     xUSDT,
     xWBTC,
     xWinDCA,
@@ -217,7 +211,6 @@ async function xWinFixture() {
     WBTC,
     USDC,
     xUSDC,
-    // xWinToken,
   };
 }
 
