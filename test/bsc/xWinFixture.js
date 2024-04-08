@@ -12,8 +12,7 @@ const {
   deployxWinMasterChef,
   deployLockStaking,
 } = require("./xWinTestHelpers.js");
-const { bsc, hardhatNode } = require("./bscMainnetAddresses.js
-");
+const { bsc, hardhatNode } = require("./bscMainnetAddresses.js");
 const { ethers } = require("hardhat");
 
 async function xWinFixture() {
