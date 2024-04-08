@@ -428,8 +428,8 @@ const deployxWinTokenAlpha = async (
     name,
     symbol,
     0,
-    0,
-    28800 * 30,
+    1000,
+    28800 * 5,
     hardhatNode.publicAddress3,
   ]);
   await xWinTokenAlpha.init(
