@@ -137,7 +137,7 @@ const deployxWinSwapV3 = async (signer) => {
   let xWinSwapFactory = await ethers.getContractFactory("xWinSwapV3");
   let xWinSwap = await upgrades.deployProxy(xWinSwapFactory, []);
   console.log("xWinSwap proxy deployed to:", await xWinSwap.getAddress());
-
+  const slippage = 450;
   await xWinSwap.setExecutor(await signer.getAddress(), true);
 
   // 2. Setup USDC-WBTC
@@ -152,7 +152,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.USDC, 500, arb.WETH, 500, arb.WBTC]
       ),
-      350,
+      slippage,
       0,
       2
     );
@@ -167,21 +167,21 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.WBTC, 500, arb.WETH, 500, arb.USDC]
       ),
-      250,
+      slippage,
       0,
       2
     );
 
   // // Setup USDC-ETH
-  // await xWinSwap.connect(signer).addTokenPath(arb.USDC, arb.WETH, arb.uniswapV3Router, [], [], 250, 500, 1);
-  // await xWinSwap.connect(signer).addTokenPath(arb.WETH, arb.USDC, arb.uniswapV3Router, [], [], 250, 500, 1);
+  // await xWinSwap.connect(signer).addTokenPath(arb.USDC, arb.WETH, arb.uniswapV3Router, [], [], slippage, 500, 1);
+  // await xWinSwap.connect(signer).addTokenPath(arb.WETH, arb.USDC, arb.uniswapV3Router, [], [], slippage, 500, 1);
   // await xWinSwap
   //   .connect(signer)
   //   .addTokenPath(
-  //     bsc.USDC,
-  //     bsc.WETH,
-  //     bsc.uniswapV3Router,
-  //     [bsc.USDC, bsc.WETH],
+  //     arb.USDC,
+  //     arb.WETH,
+  //     arb.uniswapV3Router,
+  //     [arb.USDC, arb.WETH],
   //     "0x0000000000",
   //     100,
   //     0,
@@ -200,7 +200,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.USDC, 500, arb.WETH, 3000, arb.UNI]
       ),
-      250,
+      slippage,
       0,
       2
     );
@@ -215,7 +215,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.UNI, 3000, arb.WETH, 500, arb.USDC]
       ),
-      250,
+      slippage,
       0,
       2
     );
@@ -232,7 +232,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.USDC, 500, arb.WETH, 3000, arb.LINK]
       ),
-      250,
+      slippage,
       0,
       2
     );
@@ -247,14 +247,14 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.LINK, 3000, arb.WETH, 500, arb.USDC]
       ),
-      250,
+      slippage,
       0,
       2
     );
 
   // // USDC - USDT
-  // await xWinSwap.connect(signer).addTokenPath(arb.USDC, arb.USDT, arb.uniswapV3Router, [], [], 250, 100, 1);
-  // await xWinSwap.connect(signer).addTokenPath(arb.USDT, arb.USDC, arb.uniswapV3Router, [], [], 250, 100, 1);
+  // await xWinSwap.connect(signer).addTokenPath(arb.USDC, arb.USDT, arb.uniswapV3Router, [], [], slippage, 100, 1);
+  // await xWinSwap.connect(signer).addTokenPath(arb.USDT, arb.USDC, arb.uniswapV3Router, [], [], slippage, 100, 1);
 
   // USDC - COMP
   await xWinSwap
@@ -268,7 +268,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.USDC, 500, arb.WETH, 500, arb.ARB]
       ),
-      250,
+      slippage,
       0,
       2
     );
@@ -284,7 +284,7 @@ const deployxWinSwapV3 = async (signer) => {
         ["address", "uint24", "address", "uint24", "address"],
         [arb.ARB, 500, arb.WETH, 500, arb.USDC]
       ),
-      250,
+      slippage,
       0,
       2
     );
@@ -338,6 +338,13 @@ const deployxWinSingleAsset = async (
 
   await xWinSingleAsset.setExecutor(hardhatNode.publicAddress, true);
   
+  await xWinPrice.addPrice(
+    addr,
+    arb.USDC,
+    3,
+    arb.address0
+  );
+
   return xWinSingleAsset;
 };
 
@@ -392,6 +399,13 @@ const deployxWinDCA = async (
   await xWinDCA.updateProperties(ethers.parseEther("5000"), 90 * 28800, 28800);
   console.log("xDCA updateProperties!")
 
+  await xWinPriceMaster.addPrice(
+    await xWinDCA.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
+
   return xWinDCA;
 };
 
@@ -410,7 +424,7 @@ const deployxWinTokenAlpha = async (
   );
   const xWinTokenAlpha = await upgrades.deployProxy(xWinTokenAlphaFactory, [
     baseTokenAddr,
-    arb.USDT,
+    baseTokenAddr,
     name,
     symbol,
     0,
@@ -432,6 +446,13 @@ const deployxWinTokenAlpha = async (
   //set executor
   await xWinTokenAlpha.setExecutor(hardhatNode.publicAddress, true);
   await xWinSwap.registerStrategyContract(xWinTokenAlphaAddr, baseTokenAddr);
+
+  await xWinPriceMaster.addPrice(
+    await xWinTokenAlpha.getAddress(),
+    arb.USDC,
+    3,
+    arb.address0
+  );
 
   return xWinTokenAlpha;
 };

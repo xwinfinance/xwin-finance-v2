@@ -90,44 +90,13 @@ async function xWinFixture() {
   );
   const xWinTokenAlpha = await deployxWinTokenAlpha(
     arb.USDC,
-    await xUSDT.getAddress(),
+    await xUSDC.getAddress(),
     await xWBTC.getAddress(),
     "USDT-WBTC Alpha",
     "UBA",
     xWinSwapV3,
     xWinPriceMaster,
     xWinEmitEvent
-  );
-
-  await xWinPriceMaster.addPrice(
-    await xWinTokenAlpha.getAddress(),
-    arb.USDC,
-    3,
-    arb.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xWBTC.getAddress(),
-    arb.USDC,
-    3,
-    arb.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xUSDT.getAddress(),
-    arb.USDC,
-    3,
-    arb.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xUSDC.getAddress(),
-    arb.USDC,
-    3,
-    arb.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xWinDCA.getAddress(),
-    arb.USDC,
-    3,
-    arb.address0
   );
 
   const fundV2Factory = await ethers.getContractFactory("FundV2");
