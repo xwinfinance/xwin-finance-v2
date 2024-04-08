@@ -1,4 +1,4 @@
-const { bsc, hardhatNode } = require("../../bscMainnetAddresses.js");
+const { bsc, hardhatNode } = require("./bscMainnetAddresses.js");
 const { expect } = require("chai");
 
 const swapBNB = async (bnbAmount, to, receiverAddress) => {
