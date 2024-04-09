@@ -6,7 +6,7 @@ const {
   deployxWinTokenAlpha,
   deployxWinPriceMaster,
   deployxWinSingleAsset,
-  swapBNB,
+  swapETH,
   deployFundV2Factory,
 } = require("./xWinTestHelpers.js");
 const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
@@ -143,12 +143,12 @@ async function xWinFixture() {
   
   const fundV2Default2 = fundV2Factory.attach(fundAddr);
 
-  await swapBNB("100", arb.USDT, await owner.getAddress());
-  await swapBNB("500", arb.WBTC, await owner.getAddress());
-  await swapBNB("200", arb.USDC, await owner.getAddress());
-  await swapBNB("100", arb.USDT, await accounts[0].getAddress());
-  await swapBNB("500", arb.WBTC, await accounts[0].getAddress());
-  await swapBNB("200", arb.USDC, await accounts[0].getAddress());
+  await swapETH("100", arb.USDT, await owner.getAddress());
+  await swapETH("500", arb.WBTC, await owner.getAddress());
+  await swapETH("200", arb.USDC, await owner.getAddress());
+  await swapETH("100", arb.USDT, await accounts[0].getAddress());
+  await swapETH("500", arb.WBTC, await accounts[0].getAddress());
+  await swapETH("200", arb.USDC, await accounts[0].getAddress());
 
   const USDT = await ethers.getContractAt(
     "contracts/Interface/IBEP20.sol:IBEP20",

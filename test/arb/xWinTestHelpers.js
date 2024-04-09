@@ -1,7 +1,7 @@
 const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
 const { expect } = require("chai");
 
-const swapBNB = async (ethAmount, to, receiverAddress) => {
+const swapETH = async (ethAmount, to, receiverAddress) => {
   let WETHERC = await ethers.getContractAt(
     "contracts/Interface/IBEP20.sol:IBEP20",
     arb.WETH
@@ -126,10 +126,7 @@ const deployTWAP = async () => {
   const twapFactory = await ethers.getContractFactory("UniSwapV2TWAPOracle");
   const twap = await twapFactory.deploy(arb.WETH);
   await twap.setPeriod(5);
-  // await twap.addPair(arb.XWIN_USDT_babyLP);
-  // await new Promise((resolve) => setTimeout(resolve, 6000));
-  // await twap.massUpdate();
-  // console.log("TWAP Oracle deployed to address:", await twap.getAddress());
+  console.log("TWAP Oracle deployed to address:", await twap.getAddress());
   return twap;
 };
 
@@ -171,22 +168,6 @@ const deployxWinSwapV3 = async (signer) => {
       0,
       2
     );
-
-  // // Setup USDC-ETH
-  // await xWinSwap.connect(signer).addTokenPath(arb.USDC, arb.WETH, arb.uniswapV3Router, [], [], slippage, 500, 1);
-  // await xWinSwap.connect(signer).addTokenPath(arb.WETH, arb.USDC, arb.uniswapV3Router, [], [], slippage, 500, 1);
-  // await xWinSwap
-  //   .connect(signer)
-  //   .addTokenPath(
-  //     arb.USDC,
-  //     arb.WETH,
-  //     arb.uniswapV3Router,
-  //     [arb.USDC, arb.WETH],
-  //     "0x0000000000",
-  //     100,
-  //     0,
-  //     0
-  //   );
 
   // Setup USDC-UNI
   await xWinSwap
@@ -251,10 +232,6 @@ const deployxWinSwapV3 = async (signer) => {
       0,
       2
     );
-
-  // // USDC - USDT
-  // await xWinSwap.connect(signer).addTokenPath(arb.USDC, arb.USDT, arb.uniswapV3Router, [], [], slippage, 100, 1);
-  // await xWinSwap.connect(signer).addTokenPath(arb.USDT, arb.USDC, arb.uniswapV3Router, [], [], slippage, 100, 1);
 
   // USDC - COMP
   await xWinSwap
@@ -590,7 +567,7 @@ module.exports = {
   deployxWinTokenAlpha,
   deployxWinPriceMaster,
   deployxWinSingleAsset,
-  swapBNB,
+  swapETH,
   deployFundV2Factory,
   deployxWinDefi,
   deployxWinMasterChef,
