@@ -1,12 +1,8 @@
-const {
-  time,
-  loadFixture,
-} = require("@nomicfoundation/hardhat-network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { xWinFixture } = require("./xWinFixture");
 const { expectAlmostEquals } = require("./xWinTestHelpers.js");
-const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
 const defaultAmount = ethers.parseUnits("1000", 6);
 const defaultAmountBTC = ethers.parseUnits("0.1", 8);
@@ -14,7 +10,7 @@ const defaultAmountBTC = ethers.parseUnits("0.1", 8);
 describe("Single Asset", function () {
   describe("Core", function () {
     it("xUSDC", async function () {
-      const { owner, accounts, xUSDC, xWBTC, USDT, xUSDT } = await loadFixture(
+      const { owner, accounts, USDT, xUSDT } = await loadFixture(
         xWinFixture
       );
       await USDT.approve(await xUSDT.getAddress(), defaultAmount);
@@ -65,7 +61,7 @@ describe("Single Asset", function () {
     });
 
     it("xWBTC", async function () {
-      const { owner, accounts, xUSDT, xWBTC, USDT, WBTC } = await loadFixture(
+      const { owner, accounts, xWBTC, WBTC } = await loadFixture(
         xWinFixture
       );
       await WBTC.approve(await xWBTC.getAddress(), defaultAmountBTC);

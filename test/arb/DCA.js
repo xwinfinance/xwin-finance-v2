@@ -1,12 +1,8 @@
-const {
-  time,
-  loadFixture,
-} = require("@nomicfoundation/hardhat-network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { xWinFixture } = require("./xWinFixture");
 const { expectAlmostEquals } = require("./xWinTestHelpers.js");
-const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
 const defaultAmount = ethers.parseUnits("1000", 6);
 
@@ -45,7 +41,6 @@ describe("DCA", function () {
       ).to.be.revertedWith("executor: wut?");
 
       await xWinDCA.systemDeposit();
-      // expect(canSystemDeposit).to.equal(false);
 
       expectAlmostEquals(
         await xWinDCA.getStableValues(),
@@ -87,7 +82,7 @@ describe("DCA", function () {
       );
     });
     it("xUSDC-xBTC - Emergency Unwind / Pause / Unpause", async function () {
-      const { owner, accounts, xWinDCA, xUSDC, USDC, BTCB } =
+      const { accounts, xWinDCA, USDC } =
         await loadFixture(xWinFixture);
       await USDC.approve(await xWinDCA.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(
@@ -124,8 +119,6 @@ describe("DCA", function () {
       ).to.be.revertedWith("Pausable: paused");
 
       await xWinDCA.setUnPause();
-
-      let bal = await xWinDCA.balanceOf(owner);
       await xWinDCA.withdraw(ethers.parseEther("500")); // 50% withdraw
       expectAlmostEquals(
         await xWinDCA.getBaseValues(),
@@ -133,7 +126,7 @@ describe("DCA", function () {
       );
     });
     it("xUSDC-xBTC - Performance Fee", async function () {
-      const { owner, accounts, xWinDCA, xUSDC, USDC, BTCB } =
+      const { accounts, xWinDCA, xUSDC, USDC, BTCB } =
         await loadFixture(xWinFixture);
       await USDC.approve(await xWinDCA.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(

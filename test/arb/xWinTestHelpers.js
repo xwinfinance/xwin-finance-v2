@@ -438,13 +438,11 @@ const deployFundV2Factory = async (
   xWinSwap,
   xWinEmitEvent,
   xWinPriceMaster,
-  lockedStake
 ) => {
   const fundV2Deploy = await ethers.getContractFactory("FundV2");
   const FundFactoryDeploy = await ethers.getContractFactory("FundV2Factory");
   let beacon = await upgrades.deployBeacon(fundV2Deploy);
   console.log("FundV2 Beacon Deployed!");
-  // console.log("lock", await lockedStake.getAddress());
   const fundFactory = await upgrades.deployProxy(FundFactoryDeploy, [
     hardhatNode.publicAddress,
     await xWinSwap.getAddress(),
@@ -466,93 +464,6 @@ const deployFundV2Factory = async (
   return fundFactory;
 };
 
-const deployxWinDefi = async (signer) => {
-  // initialize new xwin defi protocol
-  let xWinDefiFactory = await ethers.getContractFactory("xWinDefiProtocol");
-  let xWinDefi = await xWinDefiFactory
-    .connect(signer)
-    .deploy(
-      "0",
-      await signer.getAddress(),
-      await signer.getAddress(),
-      await signer.getAddress(),
-      arb.xWinToken
-    );
-  await swapBNB("300", arb.xWinToken, await xWinDefi.getAddress());
-  console.log("xWINDEFI deployed to address:", await xWinDefi.getAddress());
-
-  return xWinDefi;
-};
-
-const deployxWinMasterChef = async (xWinDefi, xWinPriceMaster) => {
-  let xwinPerBlockInProtocol = "1000000000000000000";
-  let xwinPerBlockInMasterChef = "10000000000000000";
-
-  let xWinMasterChefFactory = await ethers.getContractFactory("xWinMasterChef");
-  let xWinMasterChef = await upgrades.deployProxy(xWinMasterChefFactory, [
-    "xWin Master Chef",
-    "xWinMC",
-    arb.USDT,
-    28800,
-  ]);
-  console.log(
-    "xWinMasterChef proxy deployed to:",
-    await xWinMasterChef.getAddress()
-  );
-  console.log(
-    "xWinMasterChef implementation deployed to:",
-    await upgrades.erc1967.getImplementationAddress(
-      await xWinMasterChef.getAddress()
-    )
-  );
-
-  // configure xwinDefi pool for xWinMasterChef
-  let resAdd = await xWinDefi.add(
-    await xWinMasterChef.getAddress(),
-    xwinPerBlockInProtocol,
-    "1"
-  );
-  const poolId = Number(await xWinDefi.poolLength()) - 1;
-
-  // update xwindefi protocol address in xWinMasterChef
-  resAdd = await xWinMasterChef.updateSmartContract(
-    await xWinDefi.getAddress(),
-    await xWinPriceMaster.getAddress()
-  );
-
-  // update xwinId in xWinMasterChef
-  resAdd = await xWinMasterChef.updateProperties(
-    arb.xWinToken,
-    poolId,
-    xwinPerBlockInMasterChef
-  );
-
-  // admin farm dummy token into xWinDefi
-  resAdd = await xWinMasterChef.farmTokenByAdmin();
-
-  // 1. add XWIN pool ad default pool 0
-  await xWinMasterChef.add(1000, arb.xWinToken, "365");
-
-  return xWinMasterChef;
-};
-
-const deployLockStaking = async (signer, xWinMasterChef) => {
-  let lockedStakeFactory = await ethers.getContractFactory("xWinLockedStake");
-  let lockedStake = await upgrades.deployProxy(lockedStakeFactory, [
-    arb.xWinToken,
-    await xWinMasterChef.getAddress(),
-    await signer.getAddress(),
-    0,
-    1,
-  ]);
-  console.log("lockedStake proxy deployed to:", await lockedStake.getAddress());
-
-  // add another pool into xWinMasterChef pid: 1, points: 1000, duration: 1 year
-  await xWinMasterChef.add(1000, await lockedStake.getAddress(), "365");
-
-  await lockedStake.masterChefDeposit(); // lock rewards pid
-  return lockedStake;
-};
 
 const expectAlmostEquals = (a, b) => {
   expect(a).gte((b * BigInt(99)) / BigInt(100));
@@ -569,8 +480,5 @@ module.exports = {
   deployxWinSingleAsset,
   swapETH,
   deployFundV2Factory,
-  deployxWinDefi,
-  deployxWinMasterChef,
-  deployLockStaking,
   expectAlmostEquals,
 };

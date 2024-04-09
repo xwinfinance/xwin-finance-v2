@@ -1,19 +1,14 @@
-const {
-  time,
-  loadFixture,
-} = require("@nomicfoundation/hardhat-network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { expect } = require("chai");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { xWinFixture } = require("./xWinFixture");
 const { expectAlmostEquals } = require("./xWinTestHelpers.js");
-const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
 const defaultAmount = ethers.parseUnits("1000", 6);
 
 describe("Fund V2", function () {
   describe("Core", function () {
     it("Deposit", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDT, USDC } =
+      const { owner, accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
         [arb.WBTC, arb.LINK, arb.UNI],
@@ -59,7 +54,7 @@ describe("Fund V2", function () {
     });
 
     it("Rebalance", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDC } =
+      const { fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
         [arb.WBTC, arb.LINK, arb.UNI],
@@ -75,7 +70,7 @@ describe("Fund V2", function () {
     });
 
     it("Withdraw", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDC } =
+      const { accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames([arb.LINK, arb.UNI], [5000, 5000]);
       await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
@@ -105,7 +100,7 @@ describe("Fund V2", function () {
 
   describe("Fees", function () {
     it("Management Fee", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDC } =
+      const { accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
         [arb.WBTC, arb.LINK, arb.UNI],
@@ -117,10 +112,6 @@ describe("Fund V2", function () {
 
       await fundV2Default1.collectFundFee();
       await fundV2Default1.collectPlatformFee();
-
-      // console.log(await fundV2Default1.getUnitPrice(), "await fundV2Default1.getUnitPrice()")
-      // console.log(await fundV2Default1.balanceOf(await accounts[1].getAddress()), "fundV2Default1.balanceOf(await accounts[1].getAddress())")
-      // console.log(await fundV2Default1.balanceOf(arb.PlatformAddress), "fundV2Default1.balanceOf(arb.PlatformAddress)")
 
       expectAlmostEquals(
         await fundV2Default1.getUnitPrice(),
@@ -137,7 +128,7 @@ describe("Fund V2", function () {
     });
 
     it("Performance Fee", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDC } =
+      const { owner, accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
@@ -150,7 +141,6 @@ describe("Fund V2", function () {
       await fundV2Default1.withdraw(
         await fundV2Default1.balanceOf(await owner.getAddress())
       );
-      // console.log(await USDC.balanceOf(await accounts[1].getAddress()), "await USDC.balanceOf(await accounts[1].getAddress())")
 
       expectAlmostEquals(
         await USDC.balanceOf(await accounts[1].getAddress()),
@@ -165,7 +155,6 @@ describe("Fund V2", function () {
         owner,
         accounts,
         fundV2Default1,
-        fundV2Default2,
         xWinDCA,
         xWinTokenAlpha,
         xWBTC,
@@ -209,10 +198,6 @@ describe("Fund V2", function () {
         owner,
         accounts,
         fundV2Default1,
-        fundV2Default2,
-        xWinDCA,
-        xWinTokenAlpha,
-        xWBTC,
         USDC,
       } = await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(

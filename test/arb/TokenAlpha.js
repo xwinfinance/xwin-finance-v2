@@ -1,19 +1,15 @@
-const {
-  time,
-  loadFixture,
-} = require("@nomicfoundation/hardhat-network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { xWinFixture } = require("./xWinFixture");
 const { expectAlmostEquals } = require("./xWinTestHelpers.js");
-const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
 const defaultAmount = ethers.parseUnits("1000", 6);
 
 describe("TokenAlpha", function () {
   describe("Core", function () {
     it("xUSDC-xBTC - Deposit, Withdraw, SystemDeposit", async function () {
-      const { owner, accounts, xWinTokenAlpha, xUSDC, USDC, BTCB } =
+      const { owner, accounts, xWinTokenAlpha, xUSDC, USDC } =
         await loadFixture(xWinFixture);
       await USDC.approve(await xWinTokenAlpha.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(
@@ -125,7 +121,7 @@ describe("TokenAlpha", function () {
       );
     });
     it("xUSDC-xBTC - Emergency Unwind / Pause / Unpause", async function () {
-      const { owner, accounts, xWinTokenAlpha, xUSDC, USDC, BTCB } =
+      const { owner, accounts, xWinTokenAlpha, xUSDC, USDC } =
         await loadFixture(xWinFixture);
       await USDC.approve(await xWinTokenAlpha.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(
@@ -175,7 +171,7 @@ describe("TokenAlpha", function () {
       );
     });
     it("xUSDC-xBTC - Performance Fee", async function () {
-      const { owner, accounts, xWinTokenAlpha, xUSDC, USDC, BTCB } =
+      const { accounts, xWinTokenAlpha, xUSDC, USDC } =
         await loadFixture(xWinFixture);
       await USDC.approve(await xWinTokenAlpha.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(

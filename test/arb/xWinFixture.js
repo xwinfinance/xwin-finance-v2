@@ -9,7 +9,7 @@ const {
   swapETH,
   deployFundV2Factory,
 } = require("./xWinTestHelpers.js");
-const { arb, hardhatNode } = require("./arbMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
 
 async function xWinFixture() {
