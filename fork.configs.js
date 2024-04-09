@@ -9,7 +9,7 @@ const {
 // Use chain=56 blockNumberBSC=35227815 for test scripts
 // Or use chain 31337 for test scripts
 const forkConfigs = {
-  chainID: 56,
+  chainID: 42161,
   blockNumberBSC: 35227815,
   blockNumberArb: 194252889,
   blockNumberPolygon: 55083728,

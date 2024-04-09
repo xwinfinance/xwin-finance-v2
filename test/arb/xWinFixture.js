@@ -6,13 +6,10 @@ const {
   deployxWinTokenAlpha,
   deployxWinPriceMaster,
   deployxWinSingleAsset,
-  swapBNB,
+  swapETH,
   deployFundV2Factory,
-  deployxWinDefi,
-  deployxWinMasterChef,
-  deployLockStaking,
 } = require("./xWinTestHelpers.js");
-const { bsc, hardhatNode } = require("./bscMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
 
 async function xWinFixture() {
@@ -31,98 +28,85 @@ async function xWinFixture() {
 
   const xWinEmitEvent = await deployxWinEmitEvent();
 
-  // deploy farming/staking contracts
-  const xWinDefi = await deployxWinDefi(owner);
-  const xWinMasterChef = await deployxWinMasterChef(xWinDefi, xWinPriceMaster);
-  const xWinLockStaking = await deployLockStaking(owner, xWinMasterChef);
-
   // deploy factory contract
   const xWinFundV2Factory = await deployFundV2Factory(
     xWinSwapV3,
     xWinEmitEvent,
     xWinPriceMaster,
-    xWinLockStaking
+    arb.address0
   );
 
   // ======== core setup completed =============
 
   // deploy funds and strategy contracts
+  const xUSDC = await deployxWinSingleAsset(
+    "xUSDC Derivative",
+    "xUSDC",
+    arb.USDC,
+    xWinSwapV3,
+    xWinPriceMaster,
+    arb.USDC,
+    arb.aUSDC,
+    arb.aavePool,
+    arb.aavePoolDataProvider,
+    xWinEmitEvent
+  );
+  
+
   const xUSDT = await deployxWinSingleAsset(
-    "USDT Venus Staking",
+    "xUSDT Derivative",
     "xUSDT",
+    arb.USDT,
     xWinSwapV3,
-    bsc.XVS,
     xWinPriceMaster,
-    bsc.USDT,
-    bsc.USDT,
+    arb.USDC,
+    arb.aUSDT,
+    arb.aavePool,
+    arb.aavePoolDataProvider,
     xWinEmitEvent
   );
-  await xUSDT.updateProperties(bsc.venusUSDT, bsc.venusRainMaker);
-
-  const xBTCB = await deployxWinSingleAsset(
-    "BTCB Venus Staking",
-    "xBTC",
+  
+  
+  let xWBTC = await deployxWinSingleAsset(
+    "xWBTC Derivative", 
+    "xWBTC", 
+    arb.WBTC, 
     xWinSwapV3,
-    bsc.XVS,
     xWinPriceMaster,
-    bsc.BTCB,
-    bsc.USDT,
+    arb.USDC, 
+    arb.aWBTC, 
+    arb.aavePool, 
+    arb.aavePoolDataProvider,
     xWinEmitEvent
   );
-  await xBTCB.updateProperties(bsc.venusBTC, bsc.venusRainMaker);
-
+  
   const xWinDCA = await deployxWinDCA(
-    bsc.USDT,
-    await xUSDT.getAddress(),
-    await xBTCB.getAddress(),
+    arb.USDC,
+    await xUSDC.getAddress(),
+    await xWBTC.getAddress(),
     xWinSwapV3,
     xWinPriceMaster,
     xWinEmitEvent
   );
   const xWinTokenAlpha = await deployxWinTokenAlpha(
-    bsc.USDT,
-    await xUSDT.getAddress(),
-    await xBTCB.getAddress(),
-    "USDT-BTCB Alpha",
+    arb.USDC,
+    await xUSDC.getAddress(),
+    await xWBTC.getAddress(),
+    "USDT-WBTC Alpha",
     "UBA",
     xWinSwapV3,
     xWinPriceMaster,
     xWinEmitEvent
   );
 
-  await xWinPriceMaster.addPrice(
-    await xWinTokenAlpha.getAddress(),
-    bsc.USDT,
-    3,
-    bsc.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xBTCB.getAddress(),
-    bsc.USDT,
-    3,
-    bsc.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xUSDT.getAddress(),
-    bsc.USDT,
-    3,
-    bsc.address0
-  );
-  await xWinPriceMaster.addPrice(
-    await xWinDCA.getAddress(),
-    bsc.USDT,
-    3,
-    bsc.address0
-  );
-
   const fundV2Factory = await ethers.getContractFactory("FundV2");
   await xWinFundV2Factory.createFund(
     "Test Fund 1",
     "TF1",
-    bsc.USDT,
+    arb.USDC,
     await accounts[1].getAddress(),
     await owner.getAddress(),
-    bsc.USDT
+    arb.USDC
   );
   let fundIndex = await xWinFundV2Factory.getLatestFundID();
   await xWinFundV2Factory.initialiseFund(
@@ -131,19 +115,19 @@ async function xWinFixture() {
     2000,
     true,
     100,
-    bsc.PlatformAddress
+    arb.PlatformAddress
   );
   let fundAddr = await xWinFundV2Factory.getFundfromIndex(fundIndex);
-
+  console.log(fundAddr, "fundV2Default1 created")
   const fundV2Default1 = fundV2Factory.attach(fundAddr);
 
   await xWinFundV2Factory.createFund(
     "Test Fund 2",
     "TF2",
-    bsc.USDT,
+    arb.USDC,
     await accounts[1].getAddress(),
     await owner.getAddress(),
-    bsc.USDT
+    arb.USDC
   );
   fundIndex = await xWinFundV2Factory.getLatestFundID();
   await xWinFundV2Factory.initialiseFund(
@@ -152,37 +136,33 @@ async function xWinFixture() {
     2000,
     true,
     100,
-    bsc.PlatformAddress
+    arb.PlatformAddress
   );
   fundAddr = await xWinFundV2Factory.getFundfromIndex(fundIndex);
-
+  console.log(fundAddr, "fundV2Default2 created")
+  
   const fundV2Default2 = fundV2Factory.attach(fundAddr);
 
-  await swapBNB("100", bsc.USDT, await owner.getAddress());
-  await swapBNB("50", bsc.BTCB, await owner.getAddress());
-  await swapBNB("50", bsc.USDC, await owner.getAddress());
-  await swapBNB("50", bsc.xWinToken, await owner.getAddress());
-  await swapBNB("100", bsc.USDT, await accounts[0].getAddress());
-  await swapBNB("50", bsc.BTCB, await accounts[0].getAddress());
-  await swapBNB("50", bsc.USDC, await accounts[0].getAddress());
-  await swapBNB("50", bsc.xWinToken, await accounts[0].getAddress());
+  await swapETH("100", arb.USDT, await owner.getAddress());
+  await swapETH("500", arb.WBTC, await owner.getAddress());
+  await swapETH("200", arb.USDC, await owner.getAddress());
+  await swapETH("100", arb.USDT, await accounts[0].getAddress());
+  await swapETH("500", arb.WBTC, await accounts[0].getAddress());
+  await swapETH("200", arb.USDC, await accounts[0].getAddress());
 
   const USDT = await ethers.getContractAt(
     "contracts/Interface/IBEP20.sol:IBEP20",
-    bsc.USDT
+    arb.USDT
   );
-  const BTCB = await ethers.getContractAt(
+  const WBTC = await ethers.getContractAt(
     "contracts/Interface/IBEP20.sol:IBEP20",
-    bsc.BTCB
+    arb.WBTC
   );
   const USDC = await ethers.getContractAt(
     "contracts/Interface/IBEP20.sol:IBEP20",
-    bsc.USDC
+    arb.USDC
   );
-  const xWinToken = await ethers.getContractAt(
-    "contracts/Interface/IBEP20.sol:IBEP20",
-    bsc.xWinToken
-  );
+  
   return {
     owner,
     accounts,
@@ -190,18 +170,16 @@ async function xWinFixture() {
     xWinPriceMaster,
     xWinEmitEvent,
     xWinFundV2Factory,
-    xWinMasterChef,
-    xWinLockStaking,
     xUSDT,
-    xBTCB,
+    xWBTC,
     xWinDCA,
     xWinTokenAlpha,
     fundV2Default1,
     fundV2Default2,
     USDT,
-    BTCB,
+    WBTC,
     USDC,
-    xWinToken,
+    xUSDC,
   };
 }
 

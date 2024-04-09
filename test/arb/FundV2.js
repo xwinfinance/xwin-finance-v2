@@ -1,49 +1,47 @@
-const {
-  time,
-  loadFixture,
-} = require("@nomicfoundation/hardhat-network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { expect } = require("chai");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { xWinFixture } = require("./xWinFixture");
 const { expectAlmostEquals } = require("./xWinTestHelpers.js");
-const { bsc, hardhatNode } = require("./bscMainnetAddresses.js");
+const { arb } = require("./arbMainnetAddresses.js");
 const { ethers } = require("hardhat");
-const defaultAmount = ethers.parseEther("1000");
+const defaultAmount = ethers.parseUnits("1000", 6);
+
 describe("Fund V2", function () {
   describe("Core", function () {
     it("Deposit", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDT } =
+      const { owner, accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
-        [bsc.BTCB, bsc.ETH, bsc.WBNB],
+        [arb.WBTC, arb.LINK, arb.UNI],
         [3000, 3300, 3700]
       );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
       await fundV2Default1.deposit(
         ethers.Typed.uint256(defaultAmount),
         ethers.Typed.uint32(300)
       );
+
       expectAlmostEquals(
         await fundV2Default1.getUnitPrice(),
         ethers.parseEther("100")
       );
       expectAlmostEquals(
         await fundV2Default1.getVaultValues(),
-        ethers.parseEther("1000")
+        ethers.parseEther("1010")
       );
 
-      await USDT.connect(accounts[0]).approve(
+      await USDC.connect(accounts[0]).approve(
         await fundV2Default1.getAddress(),
         defaultAmount
       );
       await fundV2Default1.connect(accounts[0]).deposit(defaultAmount);
+
       expectAlmostEquals(
         await fundV2Default1.balanceOf(await owner.getAddress()),
-        (defaultAmount - defaultAmount / BigInt(100)) / BigInt(100)
+        ethers.parseEther("10.1")
       );
       expectAlmostEquals(
         await fundV2Default1.balanceOf(await accounts[0].getAddress()),
-        (defaultAmount - defaultAmount / BigInt(100)) / BigInt(100)
+        ethers.parseEther("10.1")
       );
       expectAlmostEquals(
         await fundV2Default1.getUnitPrice(),
@@ -51,109 +49,102 @@ describe("Fund V2", function () {
       );
       expectAlmostEquals(
         await fundV2Default1.getVaultValues(),
-        ethers.parseEther("2000")
+        ethers.parseEther("2020")
       );
     });
 
     it("Rebalance", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDT } =
+      const { fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
-        [bsc.BTCB, bsc.ETH, bsc.WBNB],
+        [arb.WBTC, arb.LINK, arb.UNI],
         [3000, 3300, 3700]
       );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
-      await fundV2Default1.deposit(ethers.Typed.uint256(defaultAmount));
-      await fundV2Default1.Rebalance(
-        [bsc.BTCB, bsc.ETH, bsc.WBNB],
-        [3700, 3000, 3300]
-      );
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await fundV2Default1.deposit(defaultAmount);
+      await fundV2Default1.Rebalance([arb.LINK, arb.UNI], [5000, 5000]);
       expectAlmostEquals(
         await fundV2Default1.getVaultValues(),
-        ethers.parseEther("1000")
+        ethers.parseEther("1020")
       );
     });
 
     it("Withdraw", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDT } =
+      const { accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
-      await fundV2Default1.createTargetNames(
-        [bsc.BTCB, bsc.ETH, bsc.WBNB],
-        [3000, 3300, 3700]
-      );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
-      await fundV2Default1.deposit(ethers.Typed.uint256(defaultAmount));
-      await USDT.connect(accounts[0]).approve(
+      await fundV2Default1.createTargetNames([arb.LINK, arb.UNI], [5000, 5000]);
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await fundV2Default1.deposit(defaultAmount);
+      await USDC.connect(accounts[0]).approve(
         await fundV2Default1.getAddress(),
         defaultAmount
       );
       await fundV2Default1.connect(accounts[0]).deposit(defaultAmount);
-      await fundV2Default1.withdraw(
-        await fundV2Default1.balanceOf(await owner.getAddress())
-      );
-
-      expectAlmostEquals(
-        await fundV2Default1.getUnitPrice(),
-        ethers.parseEther("100")
-      );
-      expectAlmostEquals(
-        await fundV2Default1.getVaultValues(),
-        ethers.parseEther("1000")
-      );
 
       await fundV2Default1
         .connect(accounts[0])
         .withdraw(
           await fundV2Default1.balanceOf(await accounts[0].getAddress())
         );
+
+      expectAlmostEquals(
+        await fundV2Default1.getUnitPrice(),
+        ethers.parseEther("100")
+      );
+      expectAlmostEquals(
+        await fundV2Default1.getVaultValues(),
+        ethers.parseEther("1020")
+      );
     });
   });
 
   describe("Fees", function () {
     it("Management Fee", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDT } =
+      const { accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
-        [bsc.BTCB, bsc.ETH, bsc.WBNB],
+        [arb.WBTC, arb.LINK, arb.UNI],
         [3000, 3300, 3700]
       );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
       await fundV2Default1.deposit(ethers.Typed.uint256(defaultAmount));
       await network.provider.send("hardhat_mine", ["0xA01F36"]);
 
       await fundV2Default1.collectFundFee();
       await fundV2Default1.collectPlatformFee();
+
       expectAlmostEquals(
         await fundV2Default1.getUnitPrice(),
         ethers.parseEther("98.5")
       );
       expectAlmostEquals(
         await fundV2Default1.balanceOf(await accounts[1].getAddress()),
-        ethers.parseEther("0.1")
+        ethers.parseEther("0.102")
       );
       expectAlmostEquals(
-        await fundV2Default1.balanceOf(bsc.PlatformAddress),
-        ethers.parseEther("0.05")
+        await fundV2Default1.balanceOf(arb.PlatformAddress),
+        ethers.parseEther("0.0507")
       );
     });
 
     it("Performance Fee", async function () {
-      const { owner, accounts, fundV2Default1, fundV2Default2, USDT } =
+      const { owner, accounts, fundV2Default1, USDC } =
         await loadFixture(xWinFixture);
       await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
-        [bsc.BTCB, bsc.ETH, bsc.WBNB],
+        [arb.WBTC, arb.LINK, arb.UNI],
         [3000, 3300, 3700]
       );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
-      await fundV2Default1.deposit(ethers.Typed.uint256(defaultAmount));
-      await USDT.transfer(await fundV2Default1.getAddress(), defaultAmount);
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await fundV2Default1.deposit(defaultAmount);
+      await USDC.transfer(await fundV2Default1.getAddress(), defaultAmount);
       await fundV2Default1.withdraw(
         await fundV2Default1.balanceOf(await owner.getAddress())
       );
+
       expectAlmostEquals(
-        await USDT.balanceOf(await accounts[1].getAddress()),
-        ethers.parseEther("200")
+        await USDC.balanceOf(await accounts[1].getAddress()),
+        ethers.parseUnits("197", 6)
       );
     });
   });
@@ -164,23 +155,22 @@ describe("Fund V2", function () {
         owner,
         accounts,
         fundV2Default1,
-        fundV2Default2,
         xWinDCA,
         xWinTokenAlpha,
-        xBTCB,
-        USDT,
+        xWBTC,
+        USDC,
       } = await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
         [
           await xWinDCA.getAddress(),
           await xWinTokenAlpha.getAddress(),
-          await xBTCB.getAddress(),
+          await xWBTC.getAddress(),
         ],
-        [3000, 3300, 3700]
+        [3400, 3300, 3300]
       );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
-      await fundV2Default1.deposit(ethers.Typed.uint256(defaultAmount));
-      await USDT.connect(accounts[0]).approve(
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await fundV2Default1.deposit(defaultAmount);
+      await USDC.connect(accounts[0]).approve(
         await fundV2Default1.getAddress(),
         defaultAmount
       );
@@ -189,7 +179,7 @@ describe("Fund V2", function () {
         [
           await xWinDCA.getAddress(),
           await xWinTokenAlpha.getAddress(),
-          await xBTCB.getAddress(),
+          await xWBTC.getAddress(),
         ],
         [3700, 3000, 3300]
       );
@@ -208,25 +198,21 @@ describe("Fund V2", function () {
         owner,
         accounts,
         fundV2Default1,
-        fundV2Default2,
-        xWinDCA,
-        xWinTokenAlpha,
-        xBTCB,
-        USDT,
+        USDC,
       } = await loadFixture(xWinFixture);
       await fundV2Default1.createTargetNames(
-        [bsc.BTCB, bsc.USDT],
+        [arb.WBTC, arb.USDC],
         [5000, 5000]
       );
-      await USDT.approve(await fundV2Default1.getAddress(), defaultAmount);
-      await fundV2Default1.deposit(ethers.Typed.uint256(defaultAmount));
-      await USDT.connect(accounts[0]).approve(
+      await USDC.approve(await fundV2Default1.getAddress(), defaultAmount);
+      await fundV2Default1.deposit(defaultAmount);
+      await USDC.connect(accounts[0]).approve(
         await fundV2Default1.getAddress(),
         defaultAmount
       );
       await fundV2Default1.connect(accounts[0]).deposit(defaultAmount);
       await fundV2Default1.Rebalance(
-        [bsc.BTCB, bsc.ETH, bsc.USDT],
+        [arb.WBTC, arb.LINK, arb.USDC],
         [2500, 5000, 2500]
       );
       await fundV2Default1.withdraw(

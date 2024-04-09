@@ -6,7 +6,7 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { xWinFixture } = require("./xWinFixture");
 const { expectAlmostEquals } = require("./xWinTestHelpers.js");
-const { bsc, hardhatNode } = require("../../bscMainnetAddresses.js");
+const { bsc, hardhatNode } = require("./bscMainnetAddresses.js");
 const { ethers } = require("hardhat");
 const defaultAmount = ethers.parseEther("1000");
 
