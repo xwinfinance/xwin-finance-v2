@@ -44,6 +44,8 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
     mapping(address => mapping(address => SwapInfo)) public swapData;
     mapping(address => bool) public executors;
     IxWinPriceMaster priceMaster;
+    address public xWinFeeAddress;
+    uint32 public swapFee;
 
     function initialize() external initializer {
         xWinStrategyInteractor.__xWinStrategyInteractor_init();
@@ -112,6 +114,16 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
             d.router != address(0),
             "xWinSwap: token swap pair not initialised"
         );
+
+        uint256 feeAmount = (_amount * swapFee) / 10000;
+        if (feeAmount > 0) {
+            IERC20Upgradeable(_fromToken).safeTransfer(
+                xWinFeeAddress,
+                feeAmount
+            );
+            _amount = _amount - feeAmount;
+        }
+
         uint32 slippage = _slippage > 0 ? _slippage : d.slippage;
         uint256 price = priceMaster.getPrice(_fromToken, _toToken);
         uint256 amountOutQuote = (_amount * price) -
@@ -342,5 +354,15 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
     ) internal returns (uint256) {
         require(isxWinStrategy(_strat), "xWinStrategy: not strategy contract");
         return xWinStrategy(_strat).withdraw(_amount, _slippage);
+    }
+
+    function setSwapFee(uint32 _newSwapFee) external onlyExecutor {
+        require(_newSwapFee <= 100, "Swap fee should not exceed 100");
+        swapFee = _newSwapFee;
+    }
+
+    function setSwapFeeWallet(address _newFeeWallet) external onlyExecutor {
+        require(_newFeeWallet != address(0), "FeeWallet should not be 0");
+        xWinFeeAddress = _newFeeWallet;
     }
 }
