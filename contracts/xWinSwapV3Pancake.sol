@@ -21,6 +21,15 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
         UNISWAPV3Multihop
     }
 
+    /**
+     * @notice SwapInfo Struct containing information necessary for swaps
+     * @dev router: address of swap router
+     * @dev path[]: swap paths for uniswapV2 info
+     * @dev multihopPath: abi.encodePacked swap paths containing example: address,fee,address,fee,address, for uniswapV3Multihop
+     * @dev slippage: default slippage for this swap pair for all types of swaps
+     * @dev poolFee: DEX poolFee for uniswapV3 style direct swaps
+     * @dev swapMethod: ENUM specifying the type of swap
+     */
     struct SwapInfo {
         address router;
         address[] path;
@@ -41,6 +50,7 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
         _;
     }
 
+    /// @notice Mapping containing swapInfo, for swap pair fromToken, toToken
     mapping(address => mapping(address => SwapInfo)) public swapData;
     mapping(address => bool) public executors;
     IxWinPriceMaster priceMaster;
@@ -50,6 +60,10 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
         executors[msg.sender] = true;
     }
 
+    /// @notice Swap tokens using xWin Swap with slippage
+    /// @param _amount Amount of tokens to swap
+    /// @param _fromToken Token to swap
+    /// @param _toToken Token to receive
     function swapTokenToToken(
         uint _amount,
         address _fromToken,
@@ -58,6 +72,11 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
         return swapTokenToToken(_amount, _fromToken, _toToken, 0);
     }
 
+    /// @notice Swap tokens using xWin Swap with slippage
+    /// @param _amount Amount of tokens to swap
+    /// @param _fromToken Token to swap
+    /// @param _toToken Token to receive
+    /// @param _slippage Slippage for the swap
     function swapTokenToToken(
         uint _amount,
         address _fromToken,
@@ -214,6 +233,10 @@ contract xWinSwapV3Pancake is xWinStrategyInteractor {
         return ISwapRouter(routerV3).exactInput(params);
     }
 
+    /// @notice View function to get swapInfo for a swap pair
+    /// @param _fromtoken Token to swap
+    /// @param _totoken Token to receive
+    /// @return _swapInfo SwapInfo for the swap pair
     function getSwapData(
         address _fromtoken,
         address _totoken

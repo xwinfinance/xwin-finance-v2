@@ -17,8 +17,11 @@ abstract contract xWinStrategy is
     PausableUpgradeable
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    /// @notice stablecoinUSDAddr is used for view functions with the 'inUSD' suffix.
     address public stablecoinUSDAddr;
-    address public baseToken; // DEPOSIT/WITHDRAW TOKEN
+    /// @notice baseToken for the fund/strategy, token for deposit, and token recieved on withdraw 
+    address public baseToken;
     IxWinEmitEvent public emitEvent;
     uint256[10] private __gap;
 
@@ -54,27 +57,45 @@ abstract contract xWinStrategy is
         uint256 shares
     );
 
+    /// @notice Gets the total value of the tokens within the fund, value shown in baseToken
     function getVaultValues() external view virtual returns (uint256);
 
     function _getVaultValues() internal view virtual returns (uint256);
 
+    /// @notice The unitprice of a share of this fund in baseToken
     function getUnitPrice() external view virtual returns (uint256);
 
     function _getUnitPrice() internal view virtual returns (uint256);
 
+    /// @notice Gets the total value of the tokens within the fund, value shown in stablecoinUSDAddr
     function getVaultValuesInUSD() external view virtual returns (uint256);
 
+    /// @notice The unitprice of a share of this fund, in stablecoinUSDAddr
     function getUnitPriceInUSD() external view virtual returns (uint256);
 
+    /// Deposits baseToken into the fund, and receives shares based on the fund's unitPrice
+    /// @param amount Amount of baseToken to deposit
+    /// @return shares Amount of shares minted to depositor
     function deposit(uint256 amount) external virtual returns (uint256);
 
+    /// Withdraws from the fund by burning shares, liquidating assets into baseToken and transfering to user
+    /// @param amount Amount of shares to withdraw
+    /// @return amount Amount of baseTokens transferred to depositor
     function withdraw(uint256 amount) external virtual returns (uint256);
 
+    /// Deposits baseToken into the fund, and receives shares based on the fund's unitPrice
+    /// @param amount Amount of baseToken to deposit
+    /// @param slippage Slippage to use for any swaps during the process
+    /// @return shares Amount of shares minted to depositor
     function deposit(
         uint256 amount,
         uint32 slippage
     ) external virtual returns (uint256);
 
+    /// Withdraws from the fund by burning shares, liquidating assets into baseToken and transfering to user
+    /// @param amount Amount of shares to withdraw
+    /// @param slippage Slippage to use for any swaps during the process
+    /// @return amount Amount of baseTokens transferred to depositor
     function withdraw(
         uint256 amount,
         uint32 slippage

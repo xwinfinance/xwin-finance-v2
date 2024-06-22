@@ -63,11 +63,6 @@ contract xWinDCA is xWinStrategyWithFee {
         _;
     }
 
-    /**
-     * @notice Deposits funds
-     * @dev Only possible when contract is authorized.
-     * @param _amount: number of tokens to deposit in USDT
-     */
     function deposit(
         uint256 _amount
     ) external override nonReentrant whenNotPaused returns (uint256) {
@@ -119,6 +114,7 @@ contract xWinDCA is xWinStrategyWithFee {
         return currentShares;
     }
 
+    /// @notice View function to get the amount of base tokens to swap into target token
     function getAmountToSwap() public view returns (uint) {
         uint baseTokenBal = getStableCoinTotalBalance();
         uint blockDiff = block.number - lastInvestedBlock;
@@ -134,7 +130,7 @@ contract xWinDCA is xWinStrategyWithFee {
     }
 
     /**
-     * @notice Deposits funds into the Cake Vault
+     * @notice Swaps from base token to target token
      * @dev Only possible when contract not paused.
      */
     function systemDeposit() external onlyExecutor nonReentrant returns (uint) {
@@ -217,10 +213,6 @@ contract xWinDCA is xWinStrategyWithFee {
             );
     }
 
-    /**
-     * @notice Withdraws from funds from the strategy. Only authorized contract can call this
-     * @param _shares: Number of shares to withdraw
-     */
     function withdraw(
         uint256 _shares
     ) external override nonReentrant whenNotPaused returns (uint256) {

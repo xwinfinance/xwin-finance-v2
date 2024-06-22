@@ -8,6 +8,8 @@ import "./Interface/IxWinEmitEvent.sol";
 
 contract xWinSplitFeeWallet is OwnableUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    /// @dev ratio array, each index represents a year, to support the functionality of differing ratios each year
     struct Manager {
         address managerAddress;
         uint[] ratio;
@@ -48,6 +50,9 @@ contract xWinSplitFeeWallet is OwnableUpgradeable {
         }
     }
 
+
+    /// @notice resets the manager information
+    /// @param _managers Array of manager addresses and their ratio
     function restateManagers(Manager[] memory _managers) external onlyOwner {
         delete managers;
 
@@ -71,6 +76,7 @@ contract xWinSplitFeeWallet is OwnableUpgradeable {
         }
     }
 
+    /// @notice distributes the fees to all the managers
     function distributeFees() external returns (bool) {
         uint periodToUse = (block.number - startBlock) / period;
         if (periodToUse > managers[0].ratio.length - 1) {
@@ -93,6 +99,8 @@ contract xWinSplitFeeWallet is OwnableUpgradeable {
         return true;
     }
 
+    /// Adds a new token to be tracked by this contract
+    /// @param _token token address
     function addToken(address _token) external onlyOwner {
         require(_token != address(0), "empty input");
         tokens.push(_token);
