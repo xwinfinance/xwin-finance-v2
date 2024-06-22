@@ -14,34 +14,53 @@ import "./Interface/IWETH.sol";
 contract FundV2 is xWinStrategy {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /// @notice Stores the amount of shares minted, and average mint price, used for performance fee calculations
     struct userAvgPrice {
         uint256 shares;
         uint256 avgPrice;
     }
 
-    mapping(address => bool) public validInvestors; // stores authourised addresses that can use the private fund
-    mapping(address => userAvgPrice) public performanceMap; // mapping to store performance fee
-    mapping(address => bool) public waivedPerformanceFees; // stores authourised addresses with fee waived
-    mapping(address => uint256) public TargetWeight; // stores the weight of the target asset
-    address[] public targetAddr; // list of target assets
-    IxWinPriceMaster public priceMaster; // contract address of price Oracle
-    IxWinSwap public xWinSwap; // contract address for swapping tokens
+    /// @notice Whitelisted addresses that can use the fund if openForPublic=false
+    mapping(address => bool) public validInvestors;
+    /// @notice User average price, and share amount for performace fee calculations
+    mapping(address => userAvgPrice) public performanceMap;
+    /// @notice Priviliged addresses with fees waived for this fund (e.g. manager/platform)
+    mapping(address => bool) public waivedPerformanceFees;
+    /// @notice Stores the weight of the target asset
+    mapping(address => uint256) public TargetWeight;
+    /// @notice Array containing target asset addresses
+    address[] public targetAddr;
+    /// @notice Address of price master
+    IxWinPriceMaster public priceMaster;
+    /// @notice Address of swap engine
+    IxWinSwap public xWinSwap;
+    /// @notice Address of locked staking contract, for performance fee discounts
     address public lockingAddress;
+    /// @notice Address of manager wallet to receive management fees
     address public managerAddr;
+    /// @notice Address of manager account, which can execute manager only functions
     address public managerRebAddr;
+    /// @notice Address of platform wallet to receive platform fees
     address public platformWallet;
-
+    /// @notice Last block where fees were collected
     uint256 public lastFeeCollection;
+    /// @notice Next available block
     uint256 public nextRebalance;
+    /// @notice Pending shares to award to manager
     uint256 public pendingMFee;
+    /// @notice Pending shares to award to platform
     uint256 public pendingPFee;
     uint256 private baseTokenAmt;
+    /// @notice manager fee in 4 decimals, e.g 100% = 10000
     uint256 public managerFee;
+    /// @notice platform fee in 4 decimals, e.g 100% = 10000
     uint256 public platformFee;
     uint256 public smallRatio;
     uint256 private rebalanceCycle;
+    /// @notice platform fee in 4 decimals, e.g 100% = 10000
     uint256 public performFee;
     uint256 private blocksPerDay;
+    /// @notice Unit price multiplier
     uint256 public UPMultiplier;
     bool public openForPublic;
 
@@ -68,7 +87,6 @@ contract FundV2 is xWinStrategy {
         require(_manageraddr != address(0), "_manageraddr Input 0");
         require(_managerRebaddr != address(0), "_managerRebaddr Input 0");
         require(_platformWallet != address(0), "_platformWallet Input 0");
-        // require(_lockedStaking != address(0), "_lockedStaking Input 0");
 
         __xWinStrategy_init(_name, _symbol, _baseToken, _USDAddr);
         managerAddr = _manageraddr;
@@ -106,6 +124,7 @@ contract FundV2 is xWinStrategy {
         _unpause();
     }
 
+    /// @notice Mints management fee to manager wallet, sets pendingMFee to 0
     function collectFundFee() external {
         _calcFundFee();
         uint256 toAward = pendingMFee;
@@ -114,6 +133,7 @@ contract FundV2 is xWinStrategy {
         emitEvent.FeeEvent("managefee", address(this), toAward);
     }
 
+    /// @notice Mints platform fee to platform wallet, sets pendingPFee to 0
     function collectPlatformFee() external {
         _calcFundFee();
         uint256 toAward = pendingPFee;
@@ -122,6 +142,7 @@ contract FundV2 is xWinStrategy {
         emitEvent.FeeEvent("platformfee", address(this), toAward);
     }
 
+    /// @notice Updates pending management/platform fee
     function _calcFundFee() internal {
         uint256 totalblock = block.number - lastFeeCollection;
         lastFeeCollection = block.number;
@@ -142,7 +163,7 @@ contract FundV2 is xWinStrategy {
         pendingPFee += (totalblock * uPerBlockPlatform) / (blocksPerDay * 365);
     }
 
-    /// @dev return number of target names
+    /// @notice Sets target token addresses and weights for the fund
     function createTargetNames(
         address[] calldata _toAddr,
         uint256[] calldata _targets
@@ -166,7 +187,7 @@ contract FundV2 is xWinStrategy {
         }
     }
 
-    /// @dev perform rebalance with new weight and reset next rebalance period
+    /// @notice Performs rebalance with new weight and reset next rebalance period
     function Rebalance(
         address[] calldata _toAddr,
         uint256[] calldata _targets,
@@ -192,7 +213,6 @@ contract FundV2 is xWinStrategy {
         Rebalance(_toAddr, _targets, 0);
     }
 
-    /// @dev perform subscription based on ratio setup
     function deposit(
         uint256 amount,
         uint32 _slippage
@@ -267,7 +287,6 @@ contract FundV2 is xWinStrategy {
         return mintQty;
     }
 
-    /// @dev perform redemption based on unit redeem
     function withdraw(
         uint256 amount,
         uint32 _slippage
@@ -341,7 +360,7 @@ contract FundV2 is xWinStrategy {
         return finalOutput;
     }
 
-    /// @dev fund owner move any name back to BNB
+    /// @notice fund owner move any name back to baseToken
     function MoveNonIndexNameToBase(
         address _token,
         uint32 _slippage
@@ -350,7 +369,7 @@ contract FundV2 is xWinStrategy {
         return (balanceToken, swapOutput);
     }
 
-    /// @dev get the proportional token without swapping it in emergency case
+    /// @notice get the proportional token without swapping it in emergency case
     function emergencyRedeem(uint256 redeemUnit) external whenPaused {
         uint256 redeemratio = (redeemUnit * 1e18) / getFundTotalSupply();
         require(redeemratio > 0, "redeem ratio is zero");
@@ -376,7 +395,7 @@ contract FundV2 is xWinStrategy {
         }
     }
 
-    /// @dev Calc return balance during redemption
+    /// @notice Calc return balance during redemption
     function _getTransferAmt(
         address underying,
         uint256 redeemratio
@@ -392,7 +411,7 @@ contract FundV2 is xWinStrategy {
         return _transferData;
     }
 
-    /// @dev Calc qty to issue during subscription
+    /// @notice Calc qty to issue during subscription
     function _getMintQty(
         uint256 _unitPrice
     ) internal view returns (uint256 mintQty) {
@@ -405,6 +424,12 @@ contract FundV2 is xWinStrategy {
         return mintQty;
     }
 
+    /// @notice Calculates the weight difference between the current fund and target
+    /// @param destAddr token address
+    /// @param totalvalue fund vault value
+    /// @return destRebQty Amount of tokens to sell if overweight
+    /// @return destActiveWeight amount of weight the token is off from target
+    /// @return overweight bool to indicate if token is overweight
     function _getActiveOverWeight(
         address destAddr,
         uint256 totalvalue
@@ -443,6 +468,10 @@ contract FundV2 is xWinStrategy {
         nextRebalance = block.number + rebalanceCycle;
     }
 
+    /// @notice Sells overweight tokens
+    /// @param _slippage Slippage used for the swaps
+    /// @return underwgts Returns remaining underweighted tokens, and amount
+    /// @return totalunderwgt Total underweighted sum
     function _sellOverWeightNames(
         uint32 _slippage
     )
@@ -487,6 +516,7 @@ contract FundV2 is xWinStrategy {
         return (underwgts, totalunderwgt);
     }
 
+    /// @notice Buys Underweighted tokens
     function _buyUnderWeightNames(
         xWinLib.UnderWeightData[] memory underweights,
         uint256 totalunderwgt,
@@ -563,7 +593,7 @@ contract FundV2 is xWinStrategy {
         return diffDecimal > 0 ? (value * (10 ** diffDecimal)) : value;
     }
 
-    /// @dev display estimate shares if deposit
+    /// @notice Display estimate shares if deposit
     function getEstimateShares(
         uint256 _amt
     ) external view returns (uint256 mintQty) {
@@ -574,7 +604,6 @@ contract FundV2 is xWinStrategy {
         mintQty = newTotalSupply - totalSupply;
     }
 
-    /// @dev return unit price
     function getUnitPrice() external view override returns (uint256) {
         return _getUP();
     }
@@ -589,7 +618,6 @@ contract FundV2 is xWinStrategy {
                 );
     }
 
-    /// @dev return unit price in USd
     function getUnitPriceInUSD() external view override returns (uint256) {
         return _getUPInUSD();
     }
@@ -608,14 +636,14 @@ contract FundV2 is xWinStrategy {
         return _convertTo18(_getVaultValuesInUSD(), stablecoinUSDAddr);
     }
 
-    /// @dev return token value in the vault in BNB
+    /// @notice return token value in the vault in base currency
     function getTokenValues(
         address tokenaddress
     ) external view returns (uint256) {
         return _convertTo18(_getTokenValues(tokenaddress), baseToken);
     }
 
-    // get fund total supply including fees
+    /// @notice Actual total supply, taking into account for fees
     function getFundTotalSupply() public view returns (uint256) {
         return totalSupply() + pendingMFee + pendingPFee;
     }
@@ -720,7 +748,7 @@ contract FundV2 is xWinStrategy {
         return (TargetWeight[targetAdd] * srcQty) / 10000;
     }
 
-    /// Get All the fund data needed for client
+    /// @notice Get All Extra the fund data needed for client
     function GetFundExtra()
         external
         view
@@ -747,7 +775,7 @@ contract FundV2 is xWinStrategy {
         return (10 ** ERC20Upgradeable(_token).decimals());
     }
 
-    /// Get All the fund data needed for client
+    /// @notice Get All the fund data needed for client
     function GetFundDataAll()
         external
         view
@@ -853,6 +881,9 @@ contract FundV2 is xWinStrategy {
         lockingAddress = _lockedStaking;
     }
 
+    /// @notice Handles performance fee logic, keeping record of deposits
+    /// @param mintShares Shares minted
+    /// @param latestUP Unit price of fund
     function setPerformDeposit(uint256 mintShares, uint256 latestUP) internal {
         uint256 newTotalShares = performanceMap[msg.sender].shares + mintShares;
         performanceMap[msg.sender].avgPrice =
@@ -863,6 +894,11 @@ contract FundV2 is xWinStrategy {
         performanceMap[msg.sender].shares = newTotalShares;
     }
 
+    /// @notice Handles performance fee logic, calculating profit after swap
+    /// @param swapOutput Amount of tokens received
+    /// @param _shares Amount of shares burned
+    /// @param _investorAddress User address that is withdrawing
+    /// @param _managerAddress Address to receive performance fee
     function setPerformWithdraw(
         uint256 swapOutput,
         uint256 _shares,
@@ -928,12 +964,18 @@ contract FundV2 is xWinStrategy {
         return swapOutput - performanceUnit;
     }
 
+    /// @notice Returns Users average price and shares
+    /// @param _user Address of the user
+    /// @return shares Total shares minted by the user
+    /// @return avgPrice Average mint price
     function getUserAveragePrice(
         address _user
     ) external view returns (uint256 shares, uint256 avgPrice) {
         return (performanceMap[_user].shares, performanceMap[_user].avgPrice);
     }
 
+    /// @notice Returns performance fee for user after applying discount
+    /// @param _user Address of the user
     function getDiscountedPerformFee(
         address _user
     ) public view returns (uint256 newPerformanceFee) {

@@ -12,18 +12,30 @@ import "./Interface/ILockedStake.sol";
 abstract contract xWinStrategyWithFee is xWinStrategy {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /// @notice Priviliged addresses with fees waived for this fund (e.g. manager/platform)
     mapping(address => bool) public waivedPerformanceFees;
-    uint256 public performanceFee; // 10%
+        /// @notice performance fee in 4 decimals, e.g 100% = 10000
+    uint256 public performanceFee;
+    /// @notice manager fee in 4 decimals, e.g 100% = 10000
     uint256 public managerFee;
+    /// @notice Pending shares to award to manager
     uint256 public pendingMFee;
-    uint256 public collectionPeriod; // Tomorrow 12PM
+    /// @notice Blocks between performance fee collection
+    uint256 public collectionPeriod;
+    /// @notice Next available collection block number
     uint256 public collectionBlock;
+    /// @notice Last performance fee collection block number
     uint256 public prevCollectionBlock;
+    /// @notice High water mark for performance fee collection
     uint256 public watermarkUnitprice;
+    /// @notice Manager of this strategy
     address public strategyManager;
+    /// @notice Last management fee collection block number
     uint256 public lastManagerFeeCollection;
     uint256 public blocksPerDay;
+    /// @notice New performance fee rate, which will be applied on next performance fee collection
     uint256 public pendingNewPerformanceFee;
+    /// @notice Address of locked staking contract, for performance fee discounts
     address public lockingAddress;
     uint256[10] private __gap;
 
@@ -58,10 +70,12 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         lockingAddress = _lockedStaking;
     }
 
+    /// @notice View function to check if performance fee can be collected
     function canCollectPerformanceFee() public view virtual returns (bool) {
         return block.number > collectionBlock;
     }
 
+    /// @notice Calculates management fee, updating pendingMFee
     function _calcFundFee() internal virtual {
         uint256 totalblock = block.number - lastManagerFeeCollection;
         lastManagerFeeCollection = block.number;
@@ -78,6 +92,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         pendingMFee = pendingMFee + (totalblock * uPerBlock);
     }
 
+    /// Mints management fee shares to manager
     function collectFundFee() external virtual {
         _calcFundFee();
         uint256 toAward = pendingMFee;
@@ -85,6 +100,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         _mint(strategyManager, toAward);
     }
 
+    /// @notice collects performance fee
     function collectPerformanceFee() external virtual {
         require(
             canCollectPerformanceFee(),
@@ -109,9 +125,12 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
             performanceFee = pendingNewPerformanceFee;
             pendingNewPerformanceFee = 0;
         }
-        // emit event
     }
 
+    /// @notice Function to handle performance fee on withdraw
+    /// @param _withdrawUnits Amount of shares being withdrawn
+    /// @param _amtOut Amount of tokens after swapping back to base currency
+    /// @return amount Amount left after performance fee deduction
     function performanceWithdraw(
         uint256 _withdrawUnits,
         uint256 _amtOut
@@ -145,7 +164,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         return _amtOut - fee;
     }
 
-    /// @dev Calc qty to issue during subscription
+    /// @notice Calc qty to issue during deposit
     function _getMintQty(
         uint256 _depositAmt
     ) internal view virtual returns (uint256 mintQty) {
@@ -158,7 +177,6 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         return (mintQty);
     }
 
-    /// @dev Mint unit back to investor
     function _getNewFundUnits(
         uint256 totalFundB4,
         uint256 totalValueAfter
@@ -197,7 +215,7 @@ abstract contract xWinStrategyWithFee is xWinStrategy {
         return totalSupply() + pendingMFee;
     }
 
-    /// Get All the fund data needed for client
+    /// @notice View function to get all the fund's main data and parameters
     function GetStrategyData()
         external
         view

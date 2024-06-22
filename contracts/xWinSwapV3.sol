@@ -21,6 +21,15 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         UNISWAPV3Multihop
     }
 
+    /**
+     * @notice SwapInfo Struct containing information necessary for swaps
+     * @dev router: address of swap router
+     * @dev path[]: swap paths for uniswapV2 info
+     * @dev multihopPath: abi.encodePacked swap paths containing example: address,fee,address,fee,address, for uniswapV3Multihop
+     * @dev slippage: default slippage for this swap pair for all types of swaps
+     * @dev poolFee: DEX poolFee for uniswapV3 style direct swaps
+     * @dev swapMethod: ENUM specifying the type of swap
+     */
     struct SwapInfo {
         address router;
         address[] path;
@@ -41,6 +50,7 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         _;
     }
 
+    /// @notice Mapping containing swapInfo, for swap pair fromToken, toToken
     mapping(address => mapping(address => SwapInfo)) public swapData;
     mapping(address => bool) public executors;
     IxWinPriceMaster priceMaster;
@@ -52,6 +62,10 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         executors[msg.sender] = true;
     }
 
+    /// @notice Swap tokens using xWin Swap
+    /// @param _amount Amount of tokens to swap
+    /// @param _fromToken Token to swap
+    /// @param _toToken Token to receive
     function swapTokenToToken(
         uint _amount,
         address _fromToken,
@@ -60,6 +74,11 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         return swapTokenToToken(_amount, _fromToken, _toToken, 0);
     }
 
+    /// @notice Swap tokens using xWin Swap with slippage
+    /// @param _amount Amount of tokens to swap
+    /// @param _fromToken Token to swap
+    /// @param _toToken Token to receive
+    /// @param _slippage Slippage for the swap
     function swapTokenToToken(
         uint _amount,
         address _fromToken,
@@ -101,6 +120,7 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         }
     }
 
+    /// @notice Main logic for swapping tokens
     function internalSwap(
         uint _amount,
         address _fromToken,
@@ -165,6 +185,7 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         return amountsOut;
     }
 
+    /// @notice makes swaps using a uniswapV2 style router
     function _swapV2(
         address _fromToken,
         uint amountIn,
@@ -185,6 +206,7 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         return swapAmounts[swapAmounts.length - 1];
     }
 
+    /// @notice makes direct swap using a uniswapV3 style router
     function _swapV3(
         uint _amount,
         address _fromToken,
@@ -209,6 +231,7 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         return ISwapRouter(routerV3).exactInputSingle(params);
     }
 
+    /// @notice makes a multihop swap using a uniswapV3 style router
     function _swapV3Multihop(
         uint256 _amount,
         address _fromToken,
@@ -229,6 +252,10 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         return ISwapRouter(routerV3).exactInput(params);
     }
 
+    /// @notice View function to get swapInfo for a swap pair
+    /// @param _fromtoken Token to swap
+    /// @param _totoken Token to receive
+    /// @return _swapInfo SwapInfo for the swap pair
     function getSwapData(
         address _fromtoken,
         address _totoken
@@ -270,7 +297,8 @@ contract xWinSwapV3 is xWinStrategyInteractor {
         swapData[_fromtoken][_totoken] = newSwapData;
     }
 
-    // check if input tokens are xWinStrategies, if yes handle the swap and return true else return false
+    /// @notice This function handles xWinStrategy Token swaps
+    /// @dev check if input tokens are xWinStrategies, if yes handle the swap and return true else return false
     function _xWinStratSwap(
         uint256 _amount,
         address _fromToken,

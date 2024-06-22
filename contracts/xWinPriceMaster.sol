@@ -18,16 +18,19 @@ import "./Library/FullMath.sol";
 
 contract xWinPriceMaster is OwnableUpgradeable {
     using SafeCastUpgradeable for int256;
-    /*
-    1: chainlink - usd - chainlink BTC/USDT rate from (BTC/USD & USDT/USD)
-    2: chainLink direct - chainlink BTC/ETH rate
-    3: xWinStrategy
-    4: LP Token price
-    5: TWAP
-    */
+    /**
+     * @dev source variable specifies the type of price feed where when source is:
+     * @dev 1: chainlink - usd - chainlink BTC/USDT rate from (BTC/USD & USDT/USD)
+     * @dev 2: chainLink direct - chainlink BTC/ETH rate
+     * @dev 3: xWinStrategy
+     * @dev 4: LP Token price
+     * @dev 5: TWAP (Time Weighted Average Price)
+     * @dev 6: UniswapV3 TWAP
+     * @dev chainLinkAddr is needed when source=2 || 6, with source=6 being uniswapV3 pool address
+     */
     struct SourceMap {
-        uint8 source; //    1: chainlink - usd - chainlink 2: chainLink direct 3: xWinStrategy 0: TWAP
-        address chainLinkAddr; // only needed when it is 2: chainlink direct and 6: uniswapv3 pool address
+        uint8 source;
+        address chainLinkAddr;
     }
 
     modifier onlyExecutor() {
@@ -52,6 +55,9 @@ contract xWinPriceMaster is OwnableUpgradeable {
         executors[msg.sender] = true;
     }
 
+    /// @notice Get token price from xWinPriceMaster in the form of from/to, e.g ETH/USDC, BTC/ETH
+    /// @param _from from Token address
+    /// @param _to  to Token address
     function getPrice(
         address _from,
         address _to

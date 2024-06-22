@@ -238,6 +238,7 @@ contract xWinAllocations is xWinStrategyWithFee {
         return _getLatestPrice(_targetAdd);
     }
 
+    /// @notice Sets target token addresses and weights for the fund
     function createTargetNames(
         address[] calldata _toAddr,
         uint256[] calldata _targets
@@ -261,6 +262,7 @@ contract xWinAllocations is xWinStrategyWithFee {
         }
     }
 
+    /// @notice Performs rebalance with new weight and reset next rebalance period
     function Rebalance(
         address[] calldata _toAddr,
         uint256[] calldata _targets,
@@ -326,6 +328,7 @@ contract xWinAllocations is xWinStrategyWithFee {
         return delNames;
     }
 
+    /// @notice Performs rebalance with new weight and reset next rebalance period
     function Rebalance(
         address[] calldata _toAddr,
         uint256[] calldata _targets
