@@ -12,6 +12,9 @@ import "./Interface/IxWinStrategy.sol";
 import "./Interface/IxWinStrategyInteractor.sol";
 import "./Interface/ITWAPOracle.sol";
 import "./Library/Babylonian.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "./Library/TickMath.sol";
+import "./Library/FullMath.sol";
 
 contract xWinPriceMaster is OwnableUpgradeable {
     using SafeCastUpgradeable for int256;
@@ -22,11 +25,12 @@ contract xWinPriceMaster is OwnableUpgradeable {
      * @dev 3: xWinStrategy
      * @dev 4: LP Token price
      * @dev 5: TWAP (Time Weighted Average Price)
-     * @dev chainLinkAddr is only needed when source=2, f
+     * @dev 6: UniswapV3 TWAP
+     * @dev chainLinkAddr is needed when source=2 || 6, with source=6 being uniswapV3 pool address
      */
     struct SourceMap {
         uint8 source;
-        address chainLinkAddr; // only needed when it is 2: chainlink direct
+        address chainLinkAddr;
     }
 
     modifier onlyExecutor() {
@@ -39,6 +43,7 @@ contract xWinPriceMaster is OwnableUpgradeable {
     mapping(address => address) public chainLinkUSDpair;
     mapping(address => mapping(address => SourceMap)) public priceSourceMap;
     mapping(address => bool) public executors;
+    uint32 public twapDuration;
 
     function initialize(
         address _stratInteractor,
@@ -164,6 +169,29 @@ contract xWinPriceMaster is OwnableUpgradeable {
         } else if (map.source == 5) {
             // twap price
             rate = _getTWAPPrice(_from, _to);
+        } else if (map.source == 6) {
+            uint32[] memory secondsAgo = new uint32[](2);
+            secondsAgo[0] = twapDuration;
+            secondsAgo[1] = 0;
+            (int56[] memory tickCumulatives, ) = IUniswapV3Pool(
+                map.chainLinkAddr
+            ).observe(secondsAgo);
+            uint160 sqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                int24(
+                    (tickCumulatives[1] - tickCumulatives[0]) /
+                        int32(twapDuration)
+                )
+            );
+            rate = sqrtPriceX96ToUint(
+                sqrtPriceX96,
+                ERC20Upgradeable(IUniswapV3Pool(map.chainLinkAddr).token0())
+                    .decimals()
+            );
+            uint256 decimalPlacesFrom = 10 **
+                ERC20Upgradeable(_from).decimals();
+            if (flip) rate = (decimalPlaces * decimalPlacesFrom) / rate;
+            require(rate > 0, "PriceMaster: returned 0 during call");
+            return rate;
         }
         if (flip) rate = (decimalPlaces * decimalPlaces) / rate;
         require(rate > 0, "PriceMaster: returned 0 during call");
@@ -210,7 +238,7 @@ contract xWinPriceMaster is OwnableUpgradeable {
         uint8 _source,
         address _chainLinkAddr
     ) external onlyExecutor {
-        require(_source <= 5, "incorrect source");
+        require(_source <= 6, "incorrect source");
         if (_source == 1) {
             require(
                 chainLinkUSDpair[_from] != address(0) &&
@@ -259,5 +287,19 @@ contract xWinPriceMaster is OwnableUpgradeable {
         if (value == 0) return 0;
         uint diffDecimal = 18 - ERC20Upgradeable(token).decimals();
         return diffDecimal > 0 ? (value / (10 ** diffDecimal)) : value;
+    }
+
+    function sqrtPriceX96ToUint(
+        uint160 sqrtPriceX96,
+        uint8 decimalsToken0
+    ) internal pure returns (uint256) {
+        uint256 numerator1 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
+        uint256 numerator2 = 10 ** decimalsToken0;
+        return FullMath.mulDiv(numerator1, numerator2, 1 << 192);
+    }
+
+    function setTWAPDuration(uint32 _seconds) external onlyExecutor {
+        require(_seconds != 0, "_address input is 0");
+        twapDuration = _seconds;
     }
 }
