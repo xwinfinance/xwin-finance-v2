@@ -82,8 +82,8 @@ describe("DCA", function () {
       );
     });
     it("xUSDC-xBTC - Emergency Unwind / Pause / Unpause", async function () {
-      const { accounts, xWinDCA, USDC } =
-        await loadFixture(xWinFixture);
+      const { owner, accounts, xWinDCA, USDC } = await loadFixture(xWinFixture);
+
       await USDC.approve(await xWinDCA.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(
         await xWinDCA.getAddress(),
@@ -125,8 +125,9 @@ describe("DCA", function () {
       );
     });
     it("xUSDC-xBTC - Performance Fee", async function () {
-      const { accounts, xWinDCA, xUSDC, USDC, BTCB } =
-        await loadFixture(xWinFixture);
+      const { accounts, xWinDCA, xUSDC, USDC, BTCB } = await loadFixture(
+        xWinFixture
+      );
       await USDC.approve(await xWinDCA.getAddress(), defaultAmount);
       await USDC.connect(accounts[0]).approve(
         await xWinDCA.getAddress(),

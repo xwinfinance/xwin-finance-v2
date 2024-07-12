@@ -12,7 +12,7 @@ const forkConfigs = {
   chainID: 137,
   blockNumberBSC: 35227815,
   blockNumberArb: 194252889,
-  blockNumberPolygon: 55083728,
+  blockNumberPolygon: 59220994,
   blockNumberEth: 19515540,
 };
 
