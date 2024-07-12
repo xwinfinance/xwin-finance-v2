@@ -78,7 +78,7 @@ describe("Single Asset", function () {
       expectAlmostEquals(await xWBTC.getVaultValues(), ethers.parseEther("0.01"));
       expectAlmostEquals(
         await xWBTC.getVaultValuesInUSD(),
-        ethers.parseEther("701.1")
+        ethers.parseEther("581.9")
       );
 
       await xWBTC.connect(accounts[0]).deposit(defaultAmountBTC);
@@ -90,7 +90,7 @@ describe("Single Asset", function () {
       );
       expectAlmostEquals(
         await xWBTC.getVaultValuesInUSD(),
-        ethers.parseEther("1402.2")
+        ethers.parseEther("1163.8")
       );
 
       let canSystemDeposit = await xWBTC.canSystemDeposit();
@@ -108,7 +108,7 @@ describe("Single Asset", function () {
       );
       expectAlmostEquals(
         await xWBTC.getVaultValuesInUSD(),
-        ethers.parseEther("701.1")
+        ethers.parseEther("581.9")
       );
     });
   });

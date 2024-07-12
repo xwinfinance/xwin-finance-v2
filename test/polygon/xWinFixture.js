@@ -143,10 +143,10 @@ async function xWinFixture() {
   
   const fundV2Default2 = fundV2Factory.attach(fundAddr);
 
-  await swapETH("100", polygon.USDT, await owner.getAddress());
+  await swapETH("300", polygon.USDT, await owner.getAddress());
   await swapETH("1500", polygon.WBTC, await owner.getAddress());
-  await swapETH("3000", polygon.USDC, await owner.getAddress());
-  await swapETH("100", polygon.USDT, await accounts[0].getAddress());
+  await swapETH("4000", polygon.USDC, await owner.getAddress());
+  await swapETH("300", polygon.USDT, await accounts[0].getAddress());
   await swapETH("1500", polygon.WBTC, await accounts[0].getAddress());
   await swapETH("2000", polygon.USDC, await accounts[0].getAddress());
 
