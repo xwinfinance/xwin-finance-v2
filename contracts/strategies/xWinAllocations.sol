@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "../Interface/IxWinSwap.sol";
+import "../Interface/IxWinStrategyInteractor.sol";
 import "../xWinStrategyWithFee.sol";
 import "../Interface/IxWinPriceMaster.sol";
 import "../Library/xWinLib.sol";
@@ -66,6 +67,22 @@ contract xWinAllocations is xWinStrategyWithFee {
     ) internal returns (uint256) {
         require(_amount > 0, "Nothing to deposit");
         _calcFundFee();
+        for (uint256 i = 0; i < targetAddr.length; i++) {
+            if (
+                IxWinStrategyInteractor(address(xWinSwap)).isxWinStrategy(
+                    targetAddr[i]
+                )
+            ) {
+                xWinStrategyWithFee(targetAddr[i]).collectFundFee();
+                if (
+                    xWinStrategyWithFee(targetAddr[i])
+                        .canCollectPerformanceFee() &&
+                    xWinStrategyWithFee(targetAddr[i]).performanceFee() > 0
+                ) {
+                    xWinStrategyWithFee(targetAddr[i]).collectPerformanceFee();
+                }
+            }
+        }
         uint256 unitPrice = _getUnitPrice();
 
         IERC20Upgradeable(baseToken).safeTransferFrom(
@@ -245,6 +262,7 @@ contract xWinAllocations is xWinStrategyWithFee {
     ) public onlyExecutor {
         require(_toAddr.length > 0, "At least one target is required");
         require(_toAddr.length == _targets.length, "in array lengths mismatch");
+        require(!findDup(_toAddr), "Duplicate found in targetArray");
 
         uint256 sum = sumArray(_targets);
         require(sum == 10000, "Targets: Sum must equal 100%");
@@ -576,5 +594,14 @@ contract xWinAllocations is xWinStrategyWithFee {
         returns (address[] memory _targetNamesAddress)
     {
         return targetAddr;
+    }
+
+    function findDup(address[] calldata a) private pure returns (bool) {
+        for (uint i = 0; i < a.length - 1; i++) {
+            for (uint j = i + 1; j < a.length; j++) {
+                if (a[i] == a[j]) return true;
+            }
+        }
+        return false;
     }
 }
