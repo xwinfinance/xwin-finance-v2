@@ -9,7 +9,9 @@ import "./Library/xWinLib.sol";
 import "./Interface/IxWinPriceMaster.sol";
 import "./Interface/IxWinSwap.sol";
 import "./xWinStrategy.sol";
+import "./xWinStrategyWithFee.sol";
 import "./Interface/IWETH.sol";
+import "./Interface/IxWinStrategyInteractor.sol";
 
 contract FundV2 is xWinStrategy {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -237,6 +239,22 @@ contract FundV2 is xWinStrategy {
         }
         // manager fee calculation
         _calcFundFee();
+        for (uint256 i = 0; i < targetAddr.length; i++) {
+            if (
+                IxWinStrategyInteractor(address(xWinSwap)).isxWinStrategy(
+                    targetAddr[i]
+                )
+            ) {
+                xWinStrategyWithFee(targetAddr[i]).collectFundFee();
+                if (
+                    xWinStrategyWithFee(targetAddr[i])
+                        .canCollectPerformanceFee() &&
+                    xWinStrategyWithFee(targetAddr[i]).performanceFee() > 0
+                ) {
+                    xWinStrategyWithFee(targetAddr[i]).collectPerformanceFee();
+                }
+            }
+        }
         uint256 unitPrice = _getUnitPrice();
 
         // collect deposit and swap into asset
@@ -246,28 +264,24 @@ contract FundV2 is xWinStrategy {
             amount
         );
 
-        if (nextRebalance < block.number) {
-            _rebalance(_slippage);
-        } else {
-            uint256 total = getBalance(baseToken);
-            total -= baseTokenAmt; // subtract baseTokenAmt
-            for (uint256 i = 0; i < targetAddr.length; i++) {
-                uint256 proposalQty = getTargetWeightQty(targetAddr[i], total);
-                if (proposalQty > 0) {
-                    IERC20Upgradeable(baseToken).safeIncreaseAllowance(
-                        address(xWinSwap),
-                        proposalQty
-                    );
-                    xWinSwap.swapTokenToToken(
-                        proposalQty,
-                        baseToken,
-                        targetAddr[i],
-                        _slippage
-                    );
-                }
-                if (targetAddr[i] == baseToken) {
-                    baseTokenAmt += proposalQty;
-                }
+        uint256 total = getBalance(baseToken);
+        total -= baseTokenAmt;
+        for (uint256 i = 0; i < targetAddr.length; i++) {
+            uint256 proposalQty = getTargetWeightQty(targetAddr[i], total);
+            if (proposalQty > 0) {
+                IERC20Upgradeable(baseToken).safeIncreaseAllowance(
+                    address(xWinSwap),
+                    proposalQty
+                );
+                xWinSwap.swapTokenToToken(
+                    proposalQty,
+                    baseToken,
+                    targetAddr[i],
+                    _slippage
+                );
+            }
+            if (targetAddr[i] == baseToken) {
+                baseTokenAmt += proposalQty;
             }
         }
 
