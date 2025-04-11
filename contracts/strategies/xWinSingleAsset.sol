@@ -323,7 +323,9 @@ contract xWinSingleAsset is xWinStrategyWithFee {
     function reinvestClaimComp() public nonReentrant {
         if (address(_rainMaker) == address(0)) return;
         if (_rainMaker.venusAccrued(address(this)) > 0) {
-            _rainMaker.claimVenus(address(this));
+            address[] memory a = new address[](1);
+            a[0] = address(_OlaFinance);
+            _rainMaker.claimVenus(address(this), a);
         }
         uint bal = lendingRewardToken.balanceOf(address(this));
         if (bal > 0) {
