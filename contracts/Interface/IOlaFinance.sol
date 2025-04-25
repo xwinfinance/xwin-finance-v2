@@ -33,6 +33,8 @@ interface RainMakerForOlaLens {
 
     function claimVenus(address holder) external;
 
+    function claimVenus(address holder, address[] memory vTokens) external;
+
     function compAccrued(address holder) external view returns (uint);
 
     function venusAccrued(address holder) external view returns (uint);
