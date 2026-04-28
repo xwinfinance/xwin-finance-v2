@@ -384,7 +384,9 @@ contract FundV2 is xWinStrategy {
     }
 
     /// @notice get the proportional token without swapping it in emergency case
-    function emergencyRedeem(uint256 redeemUnit) external whenPaused {
+    function emergencyRedeem(
+        uint256 redeemUnit
+    ) external nonReentrant whenPaused {
         uint256 redeemratio = (redeemUnit * 1e18) / getFundTotalSupply();
         require(redeemratio > 0, "redeem ratio is zero");
         _burn(msg.sender, redeemUnit);

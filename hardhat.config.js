@@ -2,10 +2,15 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomicfoundation/hardhat-toolbox");
 require("solidity-docgen");
 
-const { privateKey } = require("./secrets.json");
-const { getForkingConfig } = require("./fork.configs");
+const { loadSecrets, getForkingConfig } = require("./fork.configs");
+
 // Forking configs: modify the values to determine the forking chain and block number
 const forkConfig = getForkingConfig();
+const { privateKey, polygonNode } = loadSecrets();
+
+function deployAccounts() {
+  return privateKey ? [privateKey] : [];
+}
 
 module.exports = {
   networks: {
@@ -23,25 +28,25 @@ module.exports = {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       chainId: 97,
       gasPrice: 10000000000,
-      accounts: [privateKey],
+      accounts: deployAccounts(),
     },
     mainnet: {
       url: "https://bsc-dataseed.binance.org/",
       chainId: 56,
       gasPrice: 3000000000, // 3 gwei
-      accounts: [privateKey],
+      accounts: deployAccounts(),
     },
     arbmainnet: {
       url: "https://arb1.arbitrum.io/rpc",
       chainId: 42161,
       gasPrice: 100000000, // 0.1 gwei
-      accounts: [privateKey],
+      accounts: deployAccounts(),
     },
     polygonmainnet: {
-      url: "https://polygon-mainnet.g.alchemy.com/v2/jydIA5GrZHPUZRsNAxE3HFgMtIEny2os",
+      url: polygonNode,
       chainId: 137,
       gasPrice: 60000000000, // 50 gwei
-      accounts: [privateKey],
+      accounts: deployAccounts(),
     },
   },
   solidity: {
